@@ -1,9 +1,24 @@
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { useContainer } from 'class-validator';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const corsWhitelist = ['http://localhost:3000'];
+
+  const app = await NestFactory.create(AppModule, {
+    cors: {
+      origin: (origin, callback) => {
+        if (!origin || corsWhitelist.indexOf(origin) !== -1) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
+    },
+  });
+
   const config = new DocumentBuilder()
     .setTitle('Slimevr API')
     .setDescription('Slimy things')
@@ -11,7 +26,13 @@ async function bootstrap() {
     .addTag('slimevr')
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('api', app, document, {
+    swaggerOptions: {
+      defaultModelRendering: 'model',
+    },
+  });
+  app.useGlobalPipes(new ValidationPipe({ transform: true }));
+  useContainer(app.select(AppModule), { fallbackOnErrors: true }); // Allow injectable into classvalidator
 
   await app.listen(3000);
 }
