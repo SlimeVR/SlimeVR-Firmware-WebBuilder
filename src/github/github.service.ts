@@ -24,6 +24,17 @@ export class GithubService {
     });
   }
 
+  private getMainRelease(): ReleaseDTO {
+    return {
+      name: 'main',
+      zipball_url:
+        'https://github.com/SlimeVR/SlimeVR-Tracker-ESP/archive/refs/heads/main.zip',
+      prerelease: false,
+      draft: false,
+      url: 'https://github.com/SlimeVR/SlimeVR-Tracker-ESP/archive/refs/heads/main.zip',
+    };
+  }
+
   async getReleases(owner: string, repo: string): Promise<ReleaseDTO[]> {
     return this.cacheManager.wrap(
       `/repos/${owner}/${repo}/releases`,
@@ -32,7 +43,7 @@ export class GithubService {
           `/repos/${owner}/${repo}/releases`,
           {},
         );
-        return data;
+        return [this.getMainRelease(), ...data];
       },
     );
   }
@@ -42,6 +53,10 @@ export class GithubService {
     repo: string,
     version: string,
   ): Promise<ReleaseDTO> {
+    if (version === 'main') {
+      return this.getMainRelease();
+    }
+
     return this.cacheManager.wrap(
       `/repos/${owner}/${repo}/releases/tags/${version}`,
       async () => {

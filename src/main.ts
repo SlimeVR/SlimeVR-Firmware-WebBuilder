@@ -5,7 +5,7 @@ import { useContainer } from 'class-validator';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const corsWhitelist = ['http://localhost:3000'];
+  const corsWhitelist = ['http://localhost:3000', 'http://localhost:3001'];
 
   const app = await NestFactory.create(AppModule, {
     cors: {

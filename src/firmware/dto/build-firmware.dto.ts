@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { ValidateNested } from 'class-validator';
-import { BatteryDTO } from './battery.dto';
+import { IsOptional, ValidateNested } from 'class-validator';
+import { BatteryDTO, BatteryType } from './battery.dto';
 import { BoardPins, BoardType, FirmwareBoardDTO } from './firmware-board.dto';
 import { IMUDTO } from './imu.dto';
 
@@ -19,10 +19,11 @@ export class BuildFirmwareDTO {
   @Type(() => IMUDTO)
   public imus: IMUDTO[];
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @ValidateNested()
   @Type(() => BatteryDTO)
-  public battery: BatteryDTO;
+  @IsOptional()
+  public battery?: BatteryDTO;
 
   static completeDefaults(dto: BuildFirmwareDTO): BuildFirmwareDTO {
     const boardInts = {
@@ -62,31 +63,37 @@ export class BuildFirmwareDTO {
         [BoardType.BOARD_NODEMCU]: {
           imuSDA: 'D2',
           imuSCL: 'D1',
-          led: 'A0',
+          led: '2',
         },
         [BoardType.BOARD_WEMOSD1MINI]: {
           imuSDA: 'D2',
           imuSCL: 'D1',
-          led: 'A0',
+          led: '2',
         },
         [BoardType.BOARD_TTGO_TBASE]: {
           imuSDA: '5',
           imuSCL: '5',
-          led: 'A0',
+          led: '2',
         },
         [BoardType.BOARD_ESP01]: {
           imuSDA: '2',
           imuSCL: '0',
-          led: 'A0',
+          led: '255',
         },
         [BoardType.BOARD_WROOM32]: {
           imuSDA: '2',
           imuSCL: '0',
-          led: 'A0',
+          led: '2',
         },
       };
 
       dto.board.pins = boardsPins[dto.board.type];
+    }
+
+    if (!dto.battery) {
+      dto.battery = new BatteryDTO();
+      dto.battery.type = BatteryType.BAT_EXTERNAL;
+      dto.battery.resistance = 180;
     }
 
     if (!dto.battery.pin) {

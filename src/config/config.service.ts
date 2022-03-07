@@ -77,11 +77,15 @@ export class ConfigService {
       config: {
         accessKeyId: this.getValue('S3_ACCESS_KEY'),
         secretAccessKey: this.getValue('S3_SECRET_KEY'),
-        endpoint: this.getValue('S3_ENDPOINT'),
+        endpoint: this.getS3Endpoint(),
         s3ForcePathStyle: true,
         signatureVersion: 'v4',
       },
     };
+  }
+
+  public getS3Endpoint(): string {
+    return this.getValue('S3_ENDPOINT', true);
   }
 
   public getBuildsBucket(): string {

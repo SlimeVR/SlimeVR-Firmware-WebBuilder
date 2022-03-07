@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { BuildFirmwareDTO } from '../dto/build-firmware.dto';
 import { BoardPins, BoardType } from '../dto/firmware-board.dto';
+import { FirmwareFile } from '../dto/firmware-files.dto';
 
 export enum BuildStatus {
   BUILDING = 'BUILDING',
@@ -28,9 +29,13 @@ export class Firmware extends BaseEntity {
   @Column({ enum: BuildStatus })
   public buildStatus: BuildStatus;
 
-  @ApiProperty()
+  @ApiProperty({ type: BuildFirmwareDTO })
   @Column({ type: 'simple-json' })
   public buildConfig: BuildFirmwareDTO;
+
+  @ApiProperty({ type: [FirmwareFile], required: false })
+  @Column({ type: 'simple-json', nullable: true })
+  public firmwareFiles?: FirmwareFile[];
 
   @ApiProperty()
   @CreateDateColumn()
