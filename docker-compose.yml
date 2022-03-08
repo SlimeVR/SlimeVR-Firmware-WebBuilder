@@ -23,6 +23,8 @@ services:
     volumes:
       - ./src:/app/src
       - ./test:/app/test
+    networks:
+      - caddy_network
     environment:
       APP_ENV: ${APP_ENV}
       LISTEN_HOST: ${LISTEN_HOST}
@@ -72,3 +74,7 @@ secrets:
     file: ./docker/minio/access_key.txt
   secret_key:
     file: ./docker/minio/secret_key.txt
+
+networks:
+  caddy_network:
+    external: true
