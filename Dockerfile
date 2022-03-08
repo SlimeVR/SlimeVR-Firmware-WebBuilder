@@ -22,4 +22,4 @@ COPY package*.json ./
 RUN npm install
 COPY . .
 
-CMD ["sh", "/app/docker/nest/run.sh"]
+CMD ["bash", "/app/docker/nest/run.sh"]
