@@ -6,7 +6,7 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const corsWhitelist = [
-    'https://slimevr-firmware-tool.llelievr.dev',
+    'https://slimevr-firmware-tool.futurabeast.com/',
     'http://localhost:3000',
     'http://localhost:3001',
   ];
