@@ -12,6 +12,8 @@ services:
       - 127.0.0.1:5432:5432
     volumes:
       - database_volume:/var/lib/postgresql/data
+    networks:
+      - slimevr_network
   slimevr_api:
     build:
       context: .
@@ -24,6 +26,7 @@ services:
       - ./src:/app/src
       - ./test:/app/test
     networks:
+      - slimevr_network
       - caddy_network
     environment:
       APP_ENV: ${APP_ENV}
@@ -52,10 +55,14 @@ services:
      - secret_key
     command: server --address ":9099" --console-address ":9000" /data/disk{1...4}
     restart: always
+    networks:
+      - slimevr_network
   slimevr_api_s3_init:
     image: minio/mc
     depends_on:
       - slimevr_api_s3
+    networks:
+      - slimevr_network
     entrypoint: >
       /bin/sh -c "
       /usr/bin/mc config host add slimevr http://slimevr_api_s3:9099 SLIMEVRACCESS SLIMEVRSECRET;
@@ -76,5 +83,6 @@ secrets:
     file: ./docker/minio/secret_key.txt
 
 networks:
+  slimevr_network:
   caddy_network:
     external: true
