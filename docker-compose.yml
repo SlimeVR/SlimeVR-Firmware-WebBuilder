@@ -57,6 +57,7 @@ services:
     restart: always
     networks:
       - slimevr_network
+      - caddy_network
   slimevr_api_s3_init:
     image: minio/mc
     depends_on:
