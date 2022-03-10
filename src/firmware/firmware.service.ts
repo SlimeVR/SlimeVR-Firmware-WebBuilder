@@ -287,7 +287,7 @@ export class FirmwareService implements OnApplicationBootstrap {
       this.buildStatusSubject.next({
         buildStatus: BuildStatus.BUILDING,
         id: firmware.id,
-        message: 'Building Firmware',
+        message: 'Building Firmware (this might take a minute)',
       });
 
       await new Promise((resolve, reject) => {
@@ -298,17 +298,11 @@ export class FirmwareService implements OnApplicationBootstrap {
           this.buildStatusSubject.next({
             buildStatus: BuildStatus.BUILDING,
             id: firmware.id,
-            message: 'Building Firmware',
+            message: 'Building Firmware (this might take a minute)',
           });
         });
 
-        platformioRun.stderr.on('data', (data) => {
-          // console.log('error', data.toString());
-        });
-
         platformioRun.on('exit', (code) => {
-          // console.log('exit with code', code);
-
           if (code === 0) {
             resolve(true);
           } else reject({ message: 'bad exit code' });
