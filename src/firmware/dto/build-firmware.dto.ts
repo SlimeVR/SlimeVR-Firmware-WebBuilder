@@ -3,7 +3,7 @@ import { Type } from 'class-transformer';
 import { IsOptional, ValidateNested } from 'class-validator';
 import { BatteryDTO, BatteryType } from './battery.dto';
 import { BoardPins, BoardType, FirmwareBoardDTO } from './firmware-board.dto';
-import { IMUDTO } from './imu.dto';
+import { IMUConfigDTO } from './imu.dto';
 
 export class BuildFirmwareDTO {
   @ApiProperty()
@@ -14,10 +14,10 @@ export class BuildFirmwareDTO {
   @Type(() => FirmwareBoardDTO)
   public board: FirmwareBoardDTO;
 
-  @ApiProperty({ type: [IMUDTO] })
+  @ApiProperty({ type: [IMUConfigDTO] })
   @ValidateNested({ each: true })
-  @Type(() => IMUDTO)
-  public imus: IMUDTO[];
+  @Type(() => IMUConfigDTO)
+  public imus: IMUConfigDTO[];
 
   @ApiProperty({ required: false })
   @ValidateNested()

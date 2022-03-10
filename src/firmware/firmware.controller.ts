@@ -23,7 +23,7 @@ import { BoardTypeBoard } from './dto/board-type-board.dto';
 import { BuildFirmwareDTO } from './dto/build-firmware.dto';
 import { BuildResponse } from './dto/build-response.dto';
 import { BoardType, FirmwareBoardDTO } from './dto/firmware-board.dto';
-import { IMUDTO, IMUType } from './dto/imu.dto';
+import { IMUConfigDTO, IMUDTO, IMUS, IMUType } from './dto/imu.dto';
 import { Firmware } from './entity/firmware.entity';
 import { VersionNotFoundError } from './errors/version-not-found.error';
 import { FirmwareService } from './firmware.service';
@@ -73,9 +73,9 @@ export class FirmwareController {
   }
 
   @Get('/imus')
-  @ApiOkResponse({ type: [String] })
-  getIMUSTypes(): string[] {
-    return Object.keys(IMUType);
+  @ApiOkResponse({ type: [IMUDTO] })
+  getIMUSTypes(): IMUDTO[] {
+    return IMUS;
   }
 
   @Get('/batteries')
@@ -91,7 +91,7 @@ export class FirmwareController {
     dto.board = new FirmwareBoardDTO();
     dto.board.type = board;
 
-    const imu = new IMUDTO();
+    const imu = new IMUConfigDTO();
     imu.type = IMUType.IMU_MPU6050;
 
     dto.imus = [imu];
