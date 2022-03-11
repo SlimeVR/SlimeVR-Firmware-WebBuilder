@@ -1,5 +1,5 @@
 import { Box, Button, Card, CardContent, Grid, LinearProgress, Typography } from "@mui/material";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 
 export function ProgressStep({ value, message, showRickOption }: { value: number | null, message: string, showRickOption: boolean }) {
@@ -11,7 +11,9 @@ export function ProgressStep({ value, message, showRickOption }: { value: number
 
   }
 
-    return (
+  const url = useMemo<string>(() => Math.random() * 10 === 0 ? 'https://www.youtube.com/embed/lpiB2wMc49g?autoplay=1' : 'https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1', [])
+
+  return (
       <Card variant='outlined'>
         <CardContent>
           <Box sx={{ width: '100%' }}>
@@ -31,7 +33,7 @@ export function ProgressStep({ value, message, showRickOption }: { value: number
                     </Grid>
                     <Grid item xs={12} style={{ height: 600, width: '100%' }}>
                       {rick &&
-                        <iframe height="600" width="100%" src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1" title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>
+                        <iframe height="600" width="100%" src={url} title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>
                       }
                     </Grid>
                 </Grid>
