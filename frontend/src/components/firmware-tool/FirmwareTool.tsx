@@ -28,6 +28,9 @@ export function FirmwareTool() {
                     <p>Please use a different browser. (Chrome, Microsoft Edge or Opera)</p>
                 </Alert>
             }
+            <Alert variant="filled" severity="warning" sx={{ my: 2 }}>
+                Known Issue: NodeMCU Boards are not flashing currently. We are working on it
+            </Alert>
             <Paper variant="outlined" sx={{ my: { xs: 3, md: 3 }, p: { xs: 1, md: 3 } }}>
                 <Typography component="h1" variant="h4" align="center">
                     Configure your firmware
