@@ -25,6 +25,10 @@ export class Firmware extends BaseEntity {
   @Generated('uuid')
   public id: string;
 
+  @ApiProperty()
+  @PrimaryColumn({ default: 'legacy' })
+  public releaseID: string;
+
   @ApiProperty({ enum: BuildStatus })
   @Column({ enum: BuildStatus })
   public buildStatus: BuildStatus;

@@ -24,8 +24,22 @@ export class GithubService {
     });
   }
 
-  private getMainRelease(): ReleaseDTO {
+  private async getMainRelease(
+    owner: string,
+    repo: string,
+  ): Promise<ReleaseDTO> {
+    //https://api.github.com/repos/SlimeVR/SlimeVR-Tracker-ESP/branches/main
+    const {
+      data: {
+        commit: { sha },
+      },
+    } = await this.fetchSerice.get<{ commit: { sha: string } }>(
+      `/repos/${owner}/${repo}/branches/main`,
+      {},
+    );
+
     return {
+      id: sha,
       name: 'main',
       zipball_url:
         'https://github.com/SlimeVR/SlimeVR-Tracker-ESP/archive/refs/heads/main.zip',
@@ -43,8 +57,19 @@ export class GithubService {
           `/repos/${owner}/${repo}/releases`,
           {},
         );
-        return [this.getMainRelease(), ...data];
+        return [
+          await this.getMainRelease(owner, repo),
+          ...data.map(({ id, url, prerelease, draft, name, zipball_url }) => ({
+            id: `${id}`,
+            url,
+            prerelease,
+            draft,
+            name,
+            zipball_url,
+          })),
+        ];
       },
+      // { ttl: 60 * 5 * 1000 }
     );
   }
 
@@ -54,19 +79,21 @@ export class GithubService {
     version: string,
   ): Promise<ReleaseDTO> {
     if (version === 'main') {
-      return this.getMainRelease();
+      return await this.getMainRelease(owner, repo);
     }
 
     return this.cacheManager.wrap(
       `/repos/${owner}/${repo}/releases/tags/${version}`,
       async () => {
-        const { data } = await this.fetchSerice.get<ReleaseDTO>(
+        const {
+          data: { id, url, prerelease, draft, name, zipball_url },
+        } = await this.fetchSerice.get<ReleaseDTO>(
           `/repos/${owner}/${repo}/releases/tags/${version}`,
           {},
         );
-        return data;
+        return { id: `${id}`, url, prerelease, draft, name, zipball_url }; //TODO: complete this
       },
-      { ttl: 1000 * 60 * 5 },
+      { ttl: 0 },
     );
   }
 }

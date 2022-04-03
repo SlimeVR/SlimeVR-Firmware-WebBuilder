@@ -2,6 +2,8 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class ReleaseDTO {
   @ApiProperty()
+  id: string;
+  @ApiProperty()
   url: string;
   @ApiProperty()
   name: string;

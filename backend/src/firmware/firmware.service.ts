@@ -13,12 +13,13 @@ import AdmZip from 'adm-zip';
 import fetch from 'node-fetch';
 import { BoardType } from './dto/firmware-board.dto';
 import { exec } from 'child_process';
-import { getConnection } from 'typeorm';
+import { getConnection, Not } from 'typeorm';
 import { InjectS3 } from 'nestjs-s3';
 import { S3 } from 'aws-sdk';
 import { APP_CONFIG, ConfigService } from 'src/config/config.service';
 import { debounceTime, filter, map, Subject } from 'rxjs';
 import { BuildStatusMessage } from './dto/build-status-message.dto';
+import { Contains } from 'class-validator';
 
 @Injectable()
 export class FirmwareService implements OnApplicationBootstrap {
@@ -57,6 +58,40 @@ export class FirmwareService implements OnApplicationBootstrap {
         buildStatus: BuildStatus.BUILDING,
       })
       .execute();
+
+    this.cleanOldReleases();
+    setInterval(() => {
+      this.cleanOldReleases();
+    }, 5 * 60 * 1000).unref();
+  }
+
+  public async cleanOldReleases(): Promise<void> {
+    const mainRelease = await this.githubService.getRelease(
+      'SlimeVR',
+      'SlimeVR-Tracker-ESP',
+      'main',
+    );
+
+    if (!mainRelease) return;
+
+    const firmwares = await Firmware.find({
+      where: {
+        releaseID: Not(mainRelease.id),
+      },
+    });
+
+    const oldFirmwares = firmwares.filter(
+      ({ buildConfig: { version } }) => version === mainRelease.name,
+    );
+
+    oldFirmwares.forEach(async (firmware) => {
+      await Firmware.delete({ id: firmware.id });
+      await this.emptyS3Directory(
+        this.appConfig.getBuildsBucket(),
+        `${firmware.id}`,
+      );
+      console.log('deleted firmware id:', firmware.id);
+    });
   }
 
   public getBoard(boardType: BoardType): string {
@@ -172,6 +207,30 @@ export class FirmwareService implements OnApplicationBootstrap {
     };
 
     return types[boardType];
+  }
+
+  public async emptyS3Directory(bucket, dir) {
+    const listParams = {
+      Bucket: bucket,
+      Prefix: dir,
+    };
+
+    const listedObjects = await this.s3.listObjectsV2(listParams).promise();
+
+    if (listedObjects.Contents.length === 0) return;
+
+    const deleteParams = {
+      Bucket: bucket,
+      Delete: { Objects: [] },
+    };
+
+    listedObjects.Contents.forEach(({ Key }) => {
+      deleteParams.Delete.Objects.push({ Key });
+    });
+
+    await this.s3.deleteObjects(deleteParams).promise();
+
+    if (listedObjects.IsTruncated) await this.emptyS3Directory(bucket, dir);
   }
 
   uploadFirmware(id: string, name: string, buffer: Buffer) {
@@ -377,9 +436,8 @@ export class FirmwareService implements OnApplicationBootstrap {
       dto = BuildFirmwareDTO.completeDefaults(dto);
 
       let firmware = await Firmware.findOne({
-        where: { buildConfig: dto },
+        where: { buildConfig: dto, releaseID: release.id },
       });
-      console.log(firmware);
 
       if (!firmware) firmware = Firmware.fromDTO(dto);
 
@@ -396,6 +454,7 @@ export class FirmwareService implements OnApplicationBootstrap {
       }
 
       firmware.buildStatus = BuildStatus.BUILDING;
+      firmware.releaseID = release.id;
 
       firmware = await Firmware.save(firmware);
 
