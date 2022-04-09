@@ -15,38 +15,47 @@ export class GithubService {
     owner: string,
     repo: string,
   ): Promise<GithubRepositoryDTO> {
-    return this.cacheManager.wrap(`/repos/${owner}/${repo}`, async () => {
-      const { data } = await this.fetchSerice.get<GithubRepositoryDTO>(
-        `/repos/${owner}/${repo}`,
-        {},
-      );
-      return data;
-    });
+    return this.cacheManager.wrap(
+      `/repos/${owner}/${repo}`,
+      async () => {
+        const { data } = await this.fetchSerice.get<GithubRepositoryDTO>(
+          `/repos/${owner}/${repo}`,
+          {},
+        );
+        return data;
+      },
+      { ttl: 60 * 5 * 1000 },
+    );
   }
 
   private async getMainRelease(
     owner: string,
     repo: string,
   ): Promise<ReleaseDTO> {
-    //https://api.github.com/repos/SlimeVR/SlimeVR-Tracker-ESP/branches/main
-    const {
-      data: {
-        commit: { sha },
-      },
-    } = await this.fetchSerice.get<{ commit: { sha: string } }>(
+    return this.cacheManager.wrap(
       `/repos/${owner}/${repo}/branches/main`,
-      {},
-    );
+      async () => {
+        const {
+          data: {
+            commit: { sha },
+          },
+        } = await this.fetchSerice.get<{ commit: { sha: string } }>(
+          `/repos/${owner}/${repo}/branches/main`,
+          {},
+        );
 
-    return {
-      id: sha,
-      name: 'main',
-      zipball_url:
-        'https://github.com/SlimeVR/SlimeVR-Tracker-ESP/archive/refs/heads/main.zip',
-      prerelease: false,
-      draft: false,
-      url: 'https://github.com/SlimeVR/SlimeVR-Tracker-ESP/archive/refs/heads/main.zip',
-    };
+        return {
+          id: sha,
+          name: 'main',
+          zipball_url:
+            'https://github.com/SlimeVR/SlimeVR-Tracker-ESP/archive/refs/heads/main.zip',
+          prerelease: false,
+          draft: false,
+          url: 'https://github.com/SlimeVR/SlimeVR-Tracker-ESP/archive/refs/heads/main.zip',
+        };
+      },
+      { ttl: 60 * 5 * 1000 },
+    );
   }
 
   async getReleases(owner: string, repo: string): Promise<ReleaseDTO[]> {
@@ -69,7 +78,7 @@ export class GithubService {
           })),
         ];
       },
-      // { ttl: 60 * 5 * 1000 }
+      { ttl: 60 * 5 * 1000 },
     );
   }
 
@@ -93,7 +102,7 @@ export class GithubService {
         );
         return { id: `${id}`, url, prerelease, draft, name, zipball_url }; //TODO: complete this
       },
-      { ttl: 0 },
+      { ttl: 60 * 5 * 1000 },
     );
   }
 }
