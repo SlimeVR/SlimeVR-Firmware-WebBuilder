@@ -19,7 +19,6 @@ import { S3 } from 'aws-sdk';
 import { APP_CONFIG, ConfigService } from 'src/config/config.service';
 import { debounceTime, filter, map, Subject } from 'rxjs';
 import { BuildStatusMessage } from './dto/build-status-message.dto';
-import { Contains } from 'class-validator';
 
 @Injectable()
 export class FirmwareService implements OnApplicationBootstrap {
