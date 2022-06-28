@@ -99,7 +99,7 @@ export class FirmwareService implements OnApplicationBootstrap {
       [BoardType.BOARD_SLIMEVR_DEV]: 'esp12e',
       [BoardType.BOARD_NODEMCU]: 'esp12e',
       [BoardType.BOARD_WEMOSD1MINI]: 'esp12e',
-      [BoardType.BOARD_TTGO_TBASE]: 'esp32dev',
+      [BoardType.BOARD_TTGO_TBASE]: 'esp12e',
       [BoardType.BOARD_WROOM32]: 'esp32dev',
       [BoardType.BOARD_ESP01]: 'esp32dev',
     };
@@ -112,12 +112,25 @@ export class FirmwareService implements OnApplicationBootstrap {
       [BoardType.BOARD_SLIMEVR_DEV]: 'espressif8266',
       [BoardType.BOARD_NODEMCU]: 'espressif8266',
       [BoardType.BOARD_WEMOSD1MINI]: 'espressif8266',
-      [BoardType.BOARD_TTGO_TBASE]: 'espressif32',
-      [BoardType.BOARD_WROOM32]: 'espressif32',
-      [BoardType.BOARD_ESP01]: 'espressif32',
+      [BoardType.BOARD_TTGO_TBASE]: 'espressif8266',
+      [BoardType.BOARD_WROOM32]: 'espressif32@3.5.0',
+      [BoardType.BOARD_ESP01]: 'espressif32@3.5.0',
     };
 
     return types[boardType];
+  }
+
+  public getLibs(boardType: BoardType): string {
+    const types = {
+      [BoardType.BOARD_SLIMEVR]: [],
+      [BoardType.BOARD_SLIMEVR_DEV]: [],
+      [BoardType.BOARD_NODEMCU]: [],
+      [BoardType.BOARD_WEMOSD1MINI]: [],
+      [BoardType.BOARD_TTGO_TBASE]: [],
+      [BoardType.BOARD_WROOM32]: ['lorol/LittleFS_esp32@1.0.6'],
+      [BoardType.BOARD_ESP01]: ['lorol/LittleFS_esp32@1.0.6'],
+    };
+    return types[boardType].join('\n\t');
   }
 
   private getFiles(
@@ -303,21 +316,21 @@ export class FirmwareService implements OnApplicationBootstrap {
       const [root] = await readdir(releaseFolderPath);
       const rootFoler = path.join(releaseFolderPath, root);
 
-      const platformioContent = `
-        [env]
-        lib_deps=
-          https://github.com/SlimeVR/CmdParser.git
-        monitor_speed = 115200
-        framework = arduino
-        build_flags =
-          -DLED_BUILTIN=${firmware.buildConfig.board.pins.led}
-          -O2
-        build_unflags = -Os
+      const platformioContent = `[env]
+lib_deps=
+  https://github.com/SlimeVR/CmdParser.git
+  ${this.getLibs(firmware.buildConfig.board.type)}
+monitor_speed = 115200
+framework = arduino
+build_flags =
+ -DLED_BUILTIN=${firmware.buildConfig.board.pins.led}
+ -O2
+build_unflags = -Os
 
-        [env:default]
-        platform = ${this.getPlatform(firmware.buildConfig.board.type)}
-        board = ${this.getBoard(firmware.buildConfig.board.type)}
-      `;
+[env:default]
+platform = ${this.getPlatform(firmware.buildConfig.board.type)}
+board = ${this.getBoard(firmware.buildConfig.board.type)}
+`;
 
       const definesContent = `
         #define IMU ${firmware.buildConfig.imus[0].type}
@@ -328,7 +341,7 @@ export class FirmwareService implements OnApplicationBootstrap {
 
         #define BATTERY_MONITOR ${firmware.buildConfig.battery.type}
         #define BATTERY_SHIELD_RESISTANCE ${firmware.buildConfig.battery.resistance}
-        
+
         #define PIN_IMU_SDA ${firmware.buildConfig.board.pins.imuSDA}
         #define PIN_IMU_SCL ${firmware.buildConfig.board.pins.imuSCL}
         #define PIN_IMU_INT ${firmware.buildConfig.imus[0].imuINT}
@@ -358,6 +371,10 @@ export class FirmwareService implements OnApplicationBootstrap {
             id: firmware.id,
             message: 'Building Firmware (this might take a minute)',
           });
+        });
+
+        platformioRun.stderr.on('data', (data) => {
+          console.log(data.toString());
         });
 
         platformioRun.on('exit', (code) => {
