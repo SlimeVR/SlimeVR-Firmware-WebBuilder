@@ -68,14 +68,18 @@ export class GithubService {
         );
         return [
           await this.getMainRelease(owner, repo),
-          ...data.map(({ id, url, prerelease, draft, name, zipball_url }) => ({
-            id: `${id}`,
-            url,
-            prerelease,
-            draft,
-            name,
-            zipball_url,
-          })),
+          ...data
+            .map(({ id, url, prerelease, draft, name, zipball_url }) => ({
+              id: `${id}`,
+              url,
+              prerelease,
+              draft,
+              name,
+              zipball_url,
+            }))
+            .filter(
+              ({ name }) => !['v0.2.1', 'v0.2.0', 'v0.2.2'].includes(name),
+            ),
         ];
       },
       { ttl: 60 * 5 * 1000 },

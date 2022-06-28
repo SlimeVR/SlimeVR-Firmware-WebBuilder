@@ -106,33 +106,6 @@ export class FirmwareService implements OnApplicationBootstrap {
     return types[boardType];
   }
 
-  public getPlatform(boardType: BoardType): string {
-    const types = {
-      [BoardType.BOARD_SLIMEVR]: 'espressif8266',
-      [BoardType.BOARD_SLIMEVR_DEV]: 'espressif8266',
-      [BoardType.BOARD_NODEMCU]: 'espressif8266',
-      [BoardType.BOARD_WEMOSD1MINI]: 'espressif8266',
-      [BoardType.BOARD_TTGO_TBASE]: 'espressif8266',
-      [BoardType.BOARD_WROOM32]: 'espressif32@3.5.0',
-      [BoardType.BOARD_ESP01]: 'espressif32@3.5.0',
-    };
-
-    return types[boardType];
-  }
-
-  public getLibs(boardType: BoardType): string {
-    const types = {
-      [BoardType.BOARD_SLIMEVR]: [],
-      [BoardType.BOARD_SLIMEVR_DEV]: [],
-      [BoardType.BOARD_NODEMCU]: [],
-      [BoardType.BOARD_WEMOSD1MINI]: [],
-      [BoardType.BOARD_TTGO_TBASE]: [],
-      [BoardType.BOARD_WROOM32]: ['lorol/LittleFS_esp32@1.0.6'],
-      [BoardType.BOARD_ESP01]: ['lorol/LittleFS_esp32@1.0.6'],
-    };
-    return types[boardType].join('\n\t');
-  }
-
   private getFiles(
     boardType: BoardType,
     rootFoler: string,
@@ -140,25 +113,31 @@ export class FirmwareService implements OnApplicationBootstrap {
     const types = {
       [BoardType.BOARD_SLIMEVR]: [
         {
-          path: path.join(rootFoler, `.pio/build/default/firmware.bin`),
+          path: path.join(rootFoler, `.pio/build/BOARD_SLIMEVR/firmware.bin`),
           offset: 0,
         },
       ],
       [BoardType.BOARD_SLIMEVR_DEV]: [
         {
-          path: path.join(rootFoler, `.pio/build/default/firmware.bin`),
+          path: path.join(
+            rootFoler,
+            `.pio/build/BOARD_SLIMEVR_DEV/firmware.bin`,
+          ),
           offset: 0,
         },
       ],
       [BoardType.BOARD_NODEMCU]: [
         {
-          path: path.join(rootFoler, `.pio/build/default/firmware.bin`),
+          path: path.join(rootFoler, `.pio/build/BOARD_NODEMCU/firmware.bin`),
           offset: 0,
         },
       ],
       [BoardType.BOARD_WEMOSD1MINI]: [
         {
-          path: path.join(rootFoler, `.pio/build/default/firmware.bin`),
+          path: path.join(
+            rootFoler,
+            `.pio/build/BOARD_WEMOSD1MINI/firmware.bin`,
+          ),
           offset: 0,
         },
       ],
@@ -168,7 +147,10 @@ export class FirmwareService implements OnApplicationBootstrap {
           offset: 0x1000,
         },
         {
-          path: path.join(rootFoler, `.pio/build/default/partitions.bin`),
+          path: path.join(
+            rootFoler,
+            `.pio/build/BOARD_TTGO_TBASE/partitions.bin`,
+          ),
           offset: 0x8000,
         },
         {
@@ -176,7 +158,10 @@ export class FirmwareService implements OnApplicationBootstrap {
           offset: 0xe000,
         },
         {
-          path: path.join(rootFoler, `.pio/build/default/firmware.bin`),
+          path: path.join(
+            rootFoler,
+            `.pio/build/BOARD_TTGO_TBASE/firmware.bin`,
+          ),
           offset: 0x10000,
         },
       ],
@@ -186,7 +171,7 @@ export class FirmwareService implements OnApplicationBootstrap {
           offset: 0x1000,
         },
         {
-          path: path.join(rootFoler, `.pio/build/default/partitions.bin`),
+          path: path.join(rootFoler, `.pio/build/BOARD_WROOM32/partitions.bin`),
           offset: 0x8000,
         },
         {
@@ -194,7 +179,7 @@ export class FirmwareService implements OnApplicationBootstrap {
           offset: 0xe000,
         },
         {
-          path: path.join(rootFoler, `.pio/build/default/firmware.bin`),
+          path: path.join(rootFoler, `.pio/build/BOARD_WROOM32/firmware.bin`),
           offset: 0x10000,
         },
       ],
@@ -204,7 +189,7 @@ export class FirmwareService implements OnApplicationBootstrap {
           offset: 0x1000,
         },
         {
-          path: path.join(rootFoler, `.pio/build/default/partitions.bin`),
+          path: path.join(rootFoler, `.pio/build/BOARD_ESP01/partitions.bin`),
           offset: 0x8000,
         },
         {
@@ -212,7 +197,7 @@ export class FirmwareService implements OnApplicationBootstrap {
           offset: 0xe000,
         },
         {
-          path: path.join(rootFoler, `.pio/build/default/firmware.bin`),
+          path: path.join(rootFoler, `.pio/build/BOARD_ESP01/firmware.bin`),
           offset: 0x10000,
         },
       ],
@@ -316,43 +301,35 @@ export class FirmwareService implements OnApplicationBootstrap {
       const [root] = await readdir(releaseFolderPath);
       const rootFoler = path.join(releaseFolderPath, root);
 
-      const platformioContent = `[env]
-lib_deps=
-  https://github.com/SlimeVR/CmdParser.git
-  ${this.getLibs(firmware.buildConfig.board.type)}
-monitor_speed = 115200
-framework = arduino
-build_flags =
- -DLED_BUILTIN=${firmware.buildConfig.board.pins.led}
- -O2
-build_unflags = -Os
-
-[env:default]
-platform = ${this.getPlatform(firmware.buildConfig.board.type)}
-board = ${this.getBoard(firmware.buildConfig.board.type)}
-`;
-
       const definesContent = `
         #define IMU ${firmware.buildConfig.imus[0].type}
         #define SECOND_IMU ${firmware.buildConfig.imus[1].type}
         #define BOARD ${firmware.buildConfig.board.type}
         #define IMU_ROTATION ${firmware.buildConfig.imus[0].rotation} * PI / 180
-        #define SECOND_IMU_ROTATION ${firmware.buildConfig.imus[1].rotation} * PI / 180
+        #define SECOND_IMU_ROTATION ${
+          firmware.buildConfig.imus[1].rotation
+        } * PI / 180
 
         #define BATTERY_MONITOR ${firmware.buildConfig.battery.type}
-        #define BATTERY_SHIELD_RESISTANCE ${firmware.buildConfig.battery.resistance}
+        #define BATTERY_SHIELD_RESISTANCE ${
+          firmware.buildConfig.battery.resistance
+        }
 
         #define PIN_IMU_SDA ${firmware.buildConfig.board.pins.imuSDA}
         #define PIN_IMU_SCL ${firmware.buildConfig.board.pins.imuSCL}
         #define PIN_IMU_INT ${firmware.buildConfig.imus[0].imuINT}
         #define PIN_IMU_INT_2 ${firmware.buildConfig.imus[1].imuINT}
         #define PIN_BATTERY_LEVEL ${firmware.buildConfig.battery.pin}
-        #define ENABLE_LEDS ${firmware.buildConfig.board.enableLed}
+        #define LED_BUILTIN ${firmware.buildConfig.board.pins.led}
+        #define LED_PIN ${
+          firmware.buildConfig.board.enableLed
+            ? firmware.buildConfig.board.pins.led
+            : 255
+        }
       `;
 
       await Promise.all([
         writeFile(path.join(rootFoler, 'src', 'defines.h'), definesContent),
-        writeFile(path.join(rootFoler, 'platformio.ini'), platformioContent),
       ]);
 
       this.buildStatusSubject.next({
@@ -362,10 +339,15 @@ board = ${this.getBoard(firmware.buildConfig.board.type)}
       });
 
       await new Promise((resolve, reject) => {
-        const platformioRun = exec('platformio run', { cwd: rootFoler });
+        const platformioRun = exec(
+          `platformio run -e ${firmware.buildConfig.board.type} -c platformio-tools.ini`,
+          {
+            cwd: rootFoler,
+          },
+        );
 
         platformioRun.stdout.on('data', (data) => {
-          // console.log(data.toString());
+          console.log('[BUILD LOG]', `[${firmware.id}]`, data.toString());
           this.buildStatusSubject.next({
             buildStatus: BuildStatus.BUILDING,
             id: firmware.id,
@@ -374,7 +356,7 @@ board = ${this.getBoard(firmware.buildConfig.board.type)}
         });
 
         platformioRun.stderr.on('data', (data) => {
-          console.log(data.toString());
+          console.log('[BUILD LOG]', `[${firmware.id}]`, data.toString());
         });
 
         platformioRun.on('exit', (code) => {
