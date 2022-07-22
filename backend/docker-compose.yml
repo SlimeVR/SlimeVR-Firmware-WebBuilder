@@ -21,7 +21,7 @@ services:
       driver: "json-file"
       options:
         max-size: "50m"
-    ports:
+    expose:
        - 3000:3000
     depends_on:
       - slimevr_database
@@ -46,7 +46,7 @@ services:
       S3_BUILDS_BUCKET: ${S3_BUILDS_BUCKET}
   slimevr-api-s3:
     image: minio/minio:latest
-    ports:
+    expose:
       - "9000:9000"
       - "9099:9099"
     environment:
