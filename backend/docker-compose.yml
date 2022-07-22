@@ -1,7 +1,6 @@
 version: '3'
 services:
-  slimevr_database:
-    container_name: slimevr_database
+  slimevr-database:
     image: "postgres"
     restart: always
     environment:
@@ -11,10 +10,10 @@ services:
     ports:
       - 127.0.0.1:5432:5432
     volumes:
-      - database_volume:/var/lib/postgresql/data
+      - database-volume:/var/lib/postgresql/data
     networks:
-      - slimevr_network
-  slimevr_api:
+      - slimevr-network
+  slimevr-api:
     build:
       context: .
     logging:
@@ -24,14 +23,14 @@ services:
     expose:
        - 3000
     depends_on:
-      - slimevr_database
+      - slimevr-database
       - slimevr-api-s3
     volumes:
       - ./src:/app/src
       - ./test:/app/test
     networks:
-      - slimevr_network
-      - caddy_network
+      - slimevr-network
+      - caddy-network
     environment:
       APP_ENV: ${APP_ENV}
       LISTEN_HOST: ${LISTEN_HOST}
@@ -60,24 +59,27 @@ services:
     command: server --address ":9099" --console-address ":9000" /data/disk{1...4}
     restart: always
     networks:
-      - slimevr_network
-      - caddy_network
-  slimevr_api_s3_init:
+      - slimevr-network
+      - caddy-network
+  slimevr-api-s3-init:
     image: minio/mc
     depends_on:
       - slimevr-api-s3
     networks:
-      - slimevr_network
+      - slimevr-network
+    secrets:
+     - access_key
+     - secret_key
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc config host add slimevr http://slimevr-api-s3:9099 SLIMEVRACCESS SLIMEVRSECRET;
+      /usr/bin/mc config host add slimevr http://slimevr-api-s3:9099 `cat /run/secrets/access_key` `cat /run/secrets/secret_key`;
       /usr/bin/mc mb slimevr/slimevr-firmware-builds;
       /usr/bin/mc policy set public slimevr/slimevr-firmware-builds;
       exit 0;
       "
 
 volumes:
-  database_volume:
+  database-volume:
   storage-minio:
     external: false
 
@@ -88,6 +90,6 @@ secrets:
     file: ./docker/minio/secret_key.txt
 
 networks:
-  slimevr_network:
-  caddy_network:
+  slimevr-network:
+  caddy-network:
     external: true

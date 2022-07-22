@@ -11,9 +11,9 @@ services:
       - caddy-data:/data
       - caddy-config:/config
     networks:
-      - caddy_network
+      - caddy-network
 networks:
-  caddy_network:
+  caddy-network:
         external: true
 
 volumes:
