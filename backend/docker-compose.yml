@@ -25,7 +25,7 @@ services:
        - 3000:3000
     depends_on:
       - slimevr_database
-      - slimevr_api_s3
+      - slimevr-api-s3
     volumes:
       - ./src:/app/src
       - ./test:/app/test
@@ -44,7 +44,7 @@ services:
       S3_SECRET_KEY: ${S3_SECRET_KEY}
       S3_ENDPOINT: ${S3_ENDPOINT}
       S3_BUILDS_BUCKET: ${S3_BUILDS_BUCKET}
-  slimevr_api_s3:
+  slimevr-api-s3:
     image: minio/minio:latest
     ports:
       - "9000:9000"
@@ -65,12 +65,12 @@ services:
   slimevr_api_s3_init:
     image: minio/mc
     depends_on:
-      - slimevr_api_s3
+      - slimevr-api-s3
     networks:
       - slimevr_network
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc config host add slimevr http://slimevr_api_s3:9099 SLIMEVRACCESS SLIMEVRSECRET;
+      /usr/bin/mc config host add slimevr http://slimevr-api-s3:9099 SLIMEVRACCESS SLIMEVRSECRET;
       /usr/bin/mc mb slimevr/slimevr-firmware-builds;
       /usr/bin/mc policy set public slimevr/slimevr-firmware-builds;
       exit 0;

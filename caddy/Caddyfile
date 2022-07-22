@@ -1,0 +1,9 @@
+slimevr-firmware-api.futurabeast.com {
+    reverse_proxy slimevr_api:3000
+}
+slimevr-s3.futurabeast.com {
+  reverse_proxy slimevr_api_s3:9099
+}
+slimevr-s3-minio.futurabeast.com {
+  reverse_proxy slimevr_api_s3:9000
+}
