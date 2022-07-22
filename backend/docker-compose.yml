@@ -22,7 +22,7 @@ services:
       options:
         max-size: "50m"
     expose:
-       - 3000:3000
+       - 3000
     depends_on:
       - slimevr_database
       - slimevr-api-s3
@@ -47,8 +47,8 @@ services:
   slimevr-api-s3:
     image: minio/minio:latest
     expose:
-      - "9000:9000"
-      - "9099:9099"
+      - 9000
+      - 9099
     environment:
       MINIO_ACCESS_KEY_FILE: access_key
       MINIO_SECRET_KEY_FILE: secret_key
