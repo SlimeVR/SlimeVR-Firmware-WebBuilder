@@ -1,16 +1,13 @@
 import { Card, CardContent, Checkbox, FormControl, FormControlLabel, Grid, InputLabel, MenuItem, Select, TextField, Typography } from "@mui/material";
 import { useMemo } from "react";
 import { Control, Controller } from "react-hook-form";
-import { useFirmwareControllerGetIMUSTypes } from "../../generated-types";
+import { Imudto } from "../../generated-types";
 import { HelperComponent } from "../HelperComponent";
 
 
 
-export function ImuConfig({ forced, control, watch, errors, name, imuIndex }: { imuIndex: number, forced: boolean, watch: any, errors: any,  control: Control<any, any>, name: string }) {
+export function ImuConfig({ forced, control, watch, errors, name, imuIndex, imus, imusLoading }: { imuIndex: number, forced: boolean, watch: any, errors: any,  control: Control<any, any>, name: string, imus: Imudto[] | null, imusLoading: boolean }) {
 
-    
-    const { data: imus, loading: imusLoading } = useFirmwareControllerGetIMUSTypes({});
-    
     const controlPrefix = `imus.${imuIndex}`
     
     const ackyuallyEnabled = forced || watch(`${controlPrefix}.enabled`);

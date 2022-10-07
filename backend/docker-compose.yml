@@ -20,8 +20,8 @@ services:
       driver: "json-file"
       options:
         max-size: "50m"
-    expose:
-       - 3000
+    ports:
+      - 3000:3000
     depends_on:
       - slimevr-database
       - slimevr-api-s3
@@ -32,8 +32,8 @@ services:
       - slimevr-network
       - caddy-network
     secrets:
-     - access_key
-     - secret_key
+      - access_key
+      - secret_key
     environment:
       APP_ENV: ${APP_ENV}
       LISTEN_HOST: ${LISTEN_HOST}
@@ -44,16 +44,17 @@ services:
       POSTGRES_DATABASE: ${POSTGRES_DATABASE}
       S3_ENDPOINT: ${S3_ENDPOINT}
       S3_BUILDS_BUCKET: ${S3_BUILDS_BUCKET}
+      GITHUB_AUTH: ${GITHUB_AUTH}
   slimevr-api-s3:
     image: minio/minio:latest
-    expose:
-      - 9000
-      - 9099
+    ports:
+      - 9000:9000
+      - 9099:9099
     volumes:
       - storage-minio:/data
     secrets:
-     - access_key
-     - secret_key
+      - access_key
+      - secret_key
     command: server --address ":9099" --console-address ":9000" /data/disk{1...4}
     restart: always
     networks:
@@ -66,11 +67,11 @@ services:
     networks:
       - slimevr-network
     secrets:
-     - access_key
-     - secret_key
+      - access_key
+      - secret_key
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc config host add slimevr http://slimevr-api-s3:9099 `cat /run/secrets/access_key` `cat /run/secrets/secret_key`;
+      /usr/bin/mc alias set slimevr http://slimevr-api-s3:9099 `cat /run/secrets/access_key` `cat /run/secrets/secret_key`;
       /usr/bin/mc mb slimevr/slimevr-firmware-builds;
       /usr/bin/mc policy set public slimevr/slimevr-firmware-builds;
       exit 0;

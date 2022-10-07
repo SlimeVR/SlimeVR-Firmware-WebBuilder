@@ -1,6 +1,7 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import * as dotenv from 'dotenv';
 import { S3ModuleOptions } from 'nestjs-s3';
+import { decode, encode } from 'universal-base64url';
 
 dotenv.config();
 
@@ -91,6 +92,10 @@ export class ConfigService {
   public getBuildsBucket(): string {
     return this.getValue('S3_BUILDS_BUCKET', true);
   }
+
+  public getGitHubAuth() {
+    return encode(this.getValue('GITHUB_AUTH', true));
+  }
 }
 
 const configService = new ConfigService(process.env).ensureValues([
@@ -104,6 +109,7 @@ const configService = new ConfigService(process.env).ensureValues([
   'S3_SECRET_KEY',
   'S3_ENDPOINT',
   'S3_BUILDS_BUCKET',
+  'GITHUB_AUTH',
 ]);
 
 const APP_CONFIG = 'APP_CONFIG';
