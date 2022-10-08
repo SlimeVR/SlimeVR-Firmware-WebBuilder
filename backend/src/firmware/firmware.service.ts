@@ -455,6 +455,7 @@ export class FirmwareService implements OnApplicationBootstrap {
           if (branches.includes(version)) {
             // This is the target repo *probably*
             repo = repoToSearch;
+            break;
           }
         }
       }
