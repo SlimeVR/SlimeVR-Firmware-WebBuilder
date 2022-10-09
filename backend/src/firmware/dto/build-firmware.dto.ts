@@ -71,7 +71,7 @@ export class BuildFirmwareDTO {
           led: '2',
         },
         [BoardType.BOARD_TTGO_TBASE]: {
-          imuSDA: '5',
+          imuSDA: '4',
           imuSCL: '5',
           led: '2',
         },
