@@ -117,7 +117,7 @@ export class GithubService {
     let ownerRepos = AVAILABLE_FIRMWARE_REPOS[owner];
     if (ownerRepos !== undefined) {
       // And a matching repo
-      let repoBranches = ownerRepos.get(repo);
+      let repoBranches = ownerRepos[repo];
       if (repoBranches !== undefined) {
         // And a matching branch
         if (repoBranches.includes(version)) {
