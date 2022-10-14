@@ -91,8 +91,9 @@ export class GithubService {
   async getAllReleases(): Promise<ReleaseDTO[]> {
     const releases: ReleaseDTO[] = [];
 
-    for (let [owner, repos] of AVAILABLE_FIRMWARE_REPOS) {
-      for (let [repo, branches] of repos) {
+    
+    for (let [owner, repos] of Object.entries(AVAILABLE_FIRMWARE_REPOS)) {
+      for (let [repo, branches] of Object.entries(repos)) {
         // Get all repo releases
         releases.push(...await this.getReleases(owner, repo));
 
@@ -113,7 +114,7 @@ export class GithubService {
   ): Promise<ReleaseDTO> {
     // TODO: Replace this with a part of the request indicating whether this is a branch or a release
     // If there's a matching owner
-    let ownerRepos = AVAILABLE_FIRMWARE_REPOS.get(owner);
+    let ownerRepos = AVAILABLE_FIRMWARE_REPOS[owner];
     if (ownerRepos !== undefined) {
       // And a matching repo
       let repoBranches = ownerRepos.get(repo);

@@ -448,7 +448,7 @@ export class FirmwareService implements OnApplicationBootstrap {
 
       // TODO: Make the site say what repo to use, please
       // If there's a matching owner
-      let ownerRepos = AVAILABLE_FIRMWARE_REPOS.get(owner);
+      let ownerRepos = AVAILABLE_FIRMWARE_REPOS[owner];
       if (ownerRepos !== undefined) {
         for (let [repoToSearch, branches] of ownerRepos) {
           // And a matching branch
