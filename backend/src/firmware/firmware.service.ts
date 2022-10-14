@@ -66,8 +66,8 @@ export class FirmwareService implements OnApplicationBootstrap {
   }
 
   public async cleanAllOldReleases() {
-    for (let [owner, repos] of AVAILABLE_FIRMWARE_REPOS) {
-      for (let [repo, branches] of repos) {
+    for (let [owner, repos] of Object.entries(AVAILABLE_FIRMWARE_REPOS)) {
+      for (let [repo, branches] of Object.entries(repos)) {
         for (let branch of branches) {
           this.cleanOldReleases(owner, repo, branch);
         }
