@@ -450,9 +450,9 @@ export class FirmwareService implements OnApplicationBootstrap {
       // If there's a matching owner
       let ownerRepos = AVAILABLE_FIRMWARE_REPOS[owner];
       if (ownerRepos !== undefined) {
-        for (let [repoToSearch, branches] of ownerRepos) {
+        for (let [repoToSearch, branches] of Object.entries(ownerRepos)) {
           // And a matching branch
-          if (branches.includes(version)) {
+          if (Array.isArray(branches) && branches.includes(version)) {
             // This is the target repo *probably*
             repo = repoToSearch;
             break;
