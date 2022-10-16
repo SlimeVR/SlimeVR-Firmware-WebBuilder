@@ -37,7 +37,6 @@ export function FirmwareTool() {
                 <p><Link href="https://github.com/deiteris/SlimeVR-Tracker-ESP/tree/qmc-mag-new">deiteris/qmc-mag-new</Link> - For use with the MPU6050/MPU6500 + QMC5883L external magnetometer configuration</p>
                 <p><Link href="https://github.com/deiteris/SlimeVR-Tracker-ESP/tree/hmc-mag">deiteris/hmc-mag</Link> - For use with the MPU6050/MPU6500 + HMC5883L external magnetometer configuration</p>
                 <p><Link href="https://github.com/tianrui233/SlimeVR-Tracker-ESP-For-Kitkat/tree/qmc-axis-aligned-en">tianrui233/qmc-axis-aligned-en</Link> - Forked from "deiteris/qmc-mag-new", but XYZ axis aligned</p>
-                <p><Link href="https://github.com/tianrui233/SlimeVR-Tracker-ESP-For-Kitkat/tree/QMC-轴对齐-CN">tianrui233/QMC-轴对齐-CN</Link> - Forked from "deiteris/qmc-mag-new", but XYZ axis aligned and Chinese serial output</p>
                 <p><Link href="https://github.com/Lupinixx/SlimeVR-Tracker-ESP/tree/mpu6050-fifo">Lupinixx/mpu6050-fifo</Link> - Attempts to use a FIFO + VQF filter for the imu</p>
                 <p><Link href="https://github.com/0forks/SlimeVR-Tracker-ESP-BMI160/tree/v3dev">0forks/v3dev</Link> - Improves support for the BMI160</p>
                 <p><Link href="https://github.com/0forks/SlimeVR-Tracker-ESP-BMI160/tree/v3dev-bmm">0forks/v3dev-bmm</Link> - Improves support for the BMI160 and adds support for the BMM150</p>

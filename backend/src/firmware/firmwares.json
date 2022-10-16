@@ -6,7 +6,7 @@
     "SlimeVR-Tracker-ESP": ["qmc-mag-new", "hmc-mag"]
   },
   "tianrui233": {
-    "SlimeVR-Tracker-ESP-For-Kitkat": ["qmc-axis-aligned-en", "QMC-轴对齐-CN"]
+    "SlimeVR-Tracker-ESP-For-Kitkat": ["qmc-axis-aligned-en"]
   },
   "Lupinixx": {
     "SlimeVR-Tracker-ESP": ["mpu6050-fifo"]
