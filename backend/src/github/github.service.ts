@@ -95,11 +95,19 @@ export class GithubService {
     for (let [owner, repos] of Object.entries(AVAILABLE_FIRMWARE_REPOS)) {
       for (let [repo, branches] of Object.entries(repos)) {
         // Get all repo releases
-        releases.push(...await this.getReleases(owner, repo));
+        try {
+          releases.push(...await this.getReleases(owner, repo));
+        } catch (e) {
+          console.error(`Unable to fetch releases for "${owner}/${repo}": `, e);
+        }
 
         // Get each branch as a release version
         for (let branch of branches) {
-          releases.push(await this.getBranchRelease(owner, repo, branch));
+          try {
+            releases.push(await this.getBranchRelease(owner, repo, branch));
+          } catch (e) {
+            console.error(`Unable to fetch branch release for "${owner}/${repo}/${branch}": `, e);
+          }
         }
       }
     }
