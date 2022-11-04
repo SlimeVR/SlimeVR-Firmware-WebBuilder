@@ -1,6 +1,7 @@
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 import { FetchService } from 'src/commons/http/fetch.service';
+import { AVAILABLE_FIRMWARE_REPOS } from 'src/firmware/firmware.constants';
 import { ReleaseDTO } from './dto/release.dto';
 import { GithubRepositoryDTO } from './dto/repository.dto';
 
@@ -24,37 +25,38 @@ export class GithubService {
         );
         return data;
       },
-      { ttl: 60 * 5 * 1000 },
+      { ttl: 5 * 60 },
     );
   }
 
-  private async getMainRelease(
+  private async getBranchRelease(
     owner: string,
     repo: string,
+    branch: string = 'main',
   ): Promise<ReleaseDTO> {
     return this.cacheManager.wrap(
-      `/repos/${owner}/${repo}/branches/main`,
+      `/repos/${owner}/${repo}/branches/${branch}`,
       async () => {
         const {
           data: {
             commit: { sha },
           },
         } = await this.fetchSerice.get<{ commit: { sha: string } }>(
-          `/repos/${owner}/${repo}/branches/main`,
+          `/repos/${owner}/${repo}/branches/${branch}`,
           {},
         );
 
         return {
           id: sha,
-          name: 'main',
+          name: `${owner}/${branch}`,
           zipball_url:
-            'https://github.com/SlimeVR/SlimeVR-Tracker-ESP/archive/refs/heads/main.zip',
+            `https://github.com/${owner}/${repo}/archive/refs/heads/${branch}.zip`,
           prerelease: false,
           draft: false,
-          url: 'https://github.com/SlimeVR/SlimeVR-Tracker-ESP/archive/refs/heads/main.zip',
+          url: `https://github.com/${owner}/${repo}/archive/refs/heads/${branch}.zip`,
         };
       },
-      { ttl: 60 * 5 * 1000 },
+      { ttl: 5 * 60 },
     );
   }
 
@@ -66,24 +68,51 @@ export class GithubService {
           `/repos/${owner}/${repo}/releases`,
           {},
         );
+
         return [
-          await this.getMainRelease(owner, repo),
           ...data
             .map(({ id, url, prerelease, draft, name, zipball_url }) => ({
               id: `${id}`,
               url,
               prerelease,
               draft,
-              name,
+              name: `${owner}/${name}`,
               zipball_url,
             }))
             .filter(
-              ({ name }) => !['v0.2.1', 'v0.2.0', 'v0.2.2'].includes(name),
+              ({ name }) => !['SlimeVR/v0.2.0', 'SlimeVR/v0.2.1', 'SlimeVR/v0.2.2'].includes(name),
             ),
         ];
       },
-      { ttl: 60 * 5 * 1000 },
+      { ttl: 5 * 60 },
     );
+  }
+
+  async getAllReleases(): Promise<ReleaseDTO[]> {
+    const releases: ReleaseDTO[] = [];
+
+    
+    for (let [owner, repos] of Object.entries(AVAILABLE_FIRMWARE_REPOS)) {
+      for (let [repo, branches] of Object.entries(repos)) {
+        // Get all repo releases
+        try {
+          releases.push(...await this.getReleases(owner, repo));
+        } catch (e) {
+          console.error(`Unable to fetch releases for "${owner}/${repo}": `, e);
+        }
+
+        // Get each branch as a release version
+        for (let branch of branches) {
+          try {
+            releases.push(await this.getBranchRelease(owner, repo, branch));
+          } catch (e) {
+            console.error(`Unable to fetch branch release for "${owner}/${repo}/${branch}": `, e);
+          }
+        }
+      }
+    }
+
+    return releases;
   }
 
   async getRelease(
@@ -91,8 +120,19 @@ export class GithubService {
     repo: string,
     version: string,
   ): Promise<ReleaseDTO> {
-    if (version === 'main') {
-      return await this.getMainRelease(owner, repo);
+    // TODO: Replace this with a part of the request indicating whether this is a branch or a release
+    // If there's a matching owner
+    let ownerRepos = AVAILABLE_FIRMWARE_REPOS[owner];
+    if (ownerRepos !== undefined) {
+      // And a matching repo
+      let repoBranches = ownerRepos[repo];
+      if (repoBranches !== undefined) {
+        // And a matching branch
+        if (repoBranches.includes(version)) {
+          // Then return the branch release instead of looking for a version
+          return this.getBranchRelease(owner, repo, version);
+        }
+      }
     }
 
     return this.cacheManager.wrap(
@@ -104,9 +144,9 @@ export class GithubService {
           `/repos/${owner}/${repo}/releases/tags/${version}`,
           {},
         );
-        return { id: `${id}`, url, prerelease, draft, name, zipball_url }; //TODO: complete this
+        return { id: `${id}`, url, prerelease, draft, name: `${owner}/${name}`, zipball_url }; //TODO: complete this
       },
-      { ttl: 60 * 5 * 1000 },
+      { ttl: 5 * 60 },
     );
   }
 }

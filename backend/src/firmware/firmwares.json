@@ -1,0 +1,20 @@
+{
+  "SlimeVR": {
+    "SlimeVR-Tracker-ESP": ["main"]
+  },
+  "deiteris": {
+    "SlimeVR-Tracker-ESP": ["qmc-mag-new", "hmc-mag"]
+  },
+  "tianrui233": {
+    "SlimeVR-Tracker-ESP-For-Kitkat": ["qmc-axis-aligned-en"]
+  },
+  "Lupinixx": {
+    "SlimeVR-Tracker-ESP": ["mpu6050-fifo"]
+  },
+  "0forks": {
+    "SlimeVR-Tracker-ESP-BMI160": ["v3dev", "v3dev-bmm"]
+  },
+  "ButterscotchV": {
+    "SlimeVR-Tracker-ESP": ["arduino-latest"]
+  }
+}

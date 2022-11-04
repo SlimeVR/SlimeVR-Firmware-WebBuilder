@@ -69,7 +69,7 @@ export class FirmwareController {
   @Get('/versions')
   @ApiOkResponse({ type: [ReleaseDTO] })
   async getVersions(): Promise<ReleaseDTO[]> {
-    return this.githubService.getReleases('SlimeVR', 'SlimeVR-Tracker-ESP');
+    return this.githubService.getAllReleases();
   }
 
   @Get('/imus')

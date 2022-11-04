@@ -19,6 +19,7 @@ import { S3 } from 'aws-sdk';
 import { APP_CONFIG, ConfigService } from 'src/config/config.service';
 import { debounceTime, filter, map, Subject } from 'rxjs';
 import { BuildStatusMessage } from './dto/build-status-message.dto';
+import { AVAILABLE_FIRMWARE_REPOS } from './firmware.constants';
 
 @Injectable()
 export class FirmwareService implements OnApplicationBootstrap {
@@ -58,29 +59,43 @@ export class FirmwareService implements OnApplicationBootstrap {
       })
       .execute();
 
-    this.cleanOldReleases();
+    this.cleanAllOldReleases();
     setInterval(() => {
-      this.cleanOldReleases();
+      this.cleanAllOldReleases();
     }, 5 * 60 * 1000).unref();
   }
 
-  public async cleanOldReleases(): Promise<void> {
-    const mainRelease = await this.githubService.getRelease(
-      'SlimeVR',
-      'SlimeVR-Tracker-ESP',
-      'main',
+  public async cleanAllOldReleases() {
+    for (let [owner, repos] of Object.entries(AVAILABLE_FIRMWARE_REPOS)) {
+      for (let [repo, branches] of Object.entries(repos)) {
+        for (let branch of branches) {
+          this.cleanOldReleases(owner, repo, branch);
+        }
+      }
+    }
+  }
+
+  public async cleanOldReleases(
+      owner: string = 'SlimeVR',
+      repo: string = 'SlimeVR-Tracker-ESP',
+      branch: string = 'main',
+    ): Promise<void> {
+    const branchRelease = await this.githubService.getRelease(
+      owner,
+      repo,
+      branch,
     );
 
-    if (!mainRelease) return;
+    if (!branchRelease) return;
 
     const firmwares = await Firmware.find({
       where: {
-        releaseID: Not(mainRelease.id),
+        releaseID: Not(branchRelease.id),
       },
     });
 
     const oldFirmwares = firmwares.filter(
-      ({ buildConfig: { version } }) => version === mainRelease.name,
+      ({ buildConfig: { version } }) => version === branchRelease.name,
     );
 
     oldFirmwares.forEach(async (firmware) => {
@@ -143,7 +158,7 @@ export class FirmwareService implements OnApplicationBootstrap {
       ],
       [BoardType.BOARD_TTGO_TBASE]: [
         {
-          path: '/root/.platformio/packages/framework-arduinoespressif32/tools/sdk/bin/bootloader_dio_40m.bin',
+          path: '/root/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/bin/bootloader_dio_40m.bin',
           offset: 0x1000,
         },
         {
@@ -167,7 +182,7 @@ export class FirmwareService implements OnApplicationBootstrap {
       ],
       [BoardType.BOARD_WROOM32]: [
         {
-          path: '/root/.platformio/packages/framework-arduinoespressif32/tools/sdk/bin/bootloader_dio_40m.bin',
+          path: '/root/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/bin/bootloader_dio_40m.bin',
           offset: 0x1000,
         },
         {
@@ -185,7 +200,7 @@ export class FirmwareService implements OnApplicationBootstrap {
       ],
       [BoardType.BOARD_ESP01]: [
         {
-          path: '/root/.platformio/packages/framework-arduinoespressif32/tools/sdk/bin/bootloader_dio_40m.bin',
+          path: '/root/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/bin/bootloader_dio_40m.bin',
           offset: 0x1000,
         },
         {
@@ -256,7 +271,7 @@ export class FirmwareService implements OnApplicationBootstrap {
 
       tmpDir = await mkdtemp(path.join(os.tmpdir(), 'slimevr-api'));
 
-      const releaseFileName = `release-${release.name}.zip`;
+      const releaseFileName = `release-${release.name.replace(/[^A-Za-z0-9. ]/gi, '_')}.zip`;
       const releaseFilePath = path.join(tmpDir, releaseFileName);
 
       const downloadFile = async (url: string, path: string) => {
@@ -425,10 +440,30 @@ export class FirmwareService implements OnApplicationBootstrap {
 
   public async buildFirmware(dto: BuildFirmwareDTO): Promise<BuildResponse> {
     try {
+      const splitVersion = dto.version.split('/', 2);
+
+      const owner = splitVersion.length > 1 ? splitVersion[0] : 'SlimeVR';
+      let repo = 'SlimeVR-Tracker-ESP';
+      const version = splitVersion.length > 1 ? splitVersion[1] : splitVersion[0];
+
+      // TODO: Make the site say what repo to use, please
+      // If there's a matching owner
+      let ownerRepos = AVAILABLE_FIRMWARE_REPOS[owner];
+      if (ownerRepos !== undefined) {
+        for (let [repoToSearch, branches] of Object.entries(ownerRepos)) {
+          // And a matching branch
+          if (Array.isArray(branches) && branches.includes(version)) {
+            // This is the target repo *probably*
+            repo = repoToSearch;
+            break;
+          }
+        }
+      }
+
       const release = await this.githubService.getRelease(
-        'SlimeVR',
-        'SlimeVR-Tracker-ESP',
-        dto.version,
+        owner,
+        repo,
+        version,
       );
 
       dto = BuildFirmwareDTO.completeDefaults(dto);

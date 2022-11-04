@@ -1,7 +1,7 @@
 import { Accordion, AccordionDetails, AccordionSummary, Button, Checkbox, FormControl, FormControlLabel, Grid, InputLabel, MenuItem,  Select,  TextField, Typography } from '@mui/material';
 import React from 'react';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { BuildResponse, useFirmwareControllerGetBoardsTypes, useFirmwareControllerGetDefaultConfig, useFirmwareControllerGetVersions } from '../../generated-types';
+import { BuildResponse, useFirmwareControllerGetBoardsTypes, useFirmwareControllerGetDefaultConfig, useFirmwareControllerGetIMUSTypes, useFirmwareControllerGetVersions } from '../../generated-types';
 import { Controller } from 'react-hook-form';
 import { useSerial } from '../../hooks/serial';
 import { ImuConfig } from './ImuConfig';
@@ -22,6 +22,8 @@ export function ConfigurationForm({ form, nextStep }: { form: any, nextStep: (id
     const { data: releases, loading: releasesLoading  } = useFirmwareControllerGetVersions({});
   
     const { data: boards, loading: boardsLoading } = useFirmwareControllerGetBoardsTypes({});
+
+    const { data: imus, loading: imusLoading } = useFirmwareControllerGetIMUSTypes({});
   
     const { refetch } = useFirmwareControllerGetDefaultConfig({
       board: '',
@@ -172,10 +174,10 @@ export function ConfigurationForm({ form, nextStep }: { form: any, nextStep: (id
             <Grid item xs={12} sm={12} mt={2}>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
-                  <ImuConfig watch={watch} control={control} imuIndex={0} errors={errors} name={'Primary IMU'} forced></ImuConfig>
+                  <ImuConfig watch={watch} control={control} imuIndex={0} errors={errors} name={'Primary IMU'} forced imus={imus} imusLoading={imusLoading}></ImuConfig>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <ImuConfig watch={watch} control={control} imuIndex={1} errors={errors} name={'Secondary IMU'} forced={false}></ImuConfig>
+                  <ImuConfig watch={watch} control={control} imuIndex={1} errors={errors} name={'Secondary IMU'} forced={false} imus={imus} imusLoading={imusLoading}></ImuConfig>
                 </Grid>
               </Grid>
             </Grid>
