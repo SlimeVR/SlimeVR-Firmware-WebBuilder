@@ -316,14 +316,19 @@ export class FirmwareService implements OnApplicationBootstrap {
       const [root] = await readdir(releaseFolderPath);
       const rootFoler = path.join(releaseFolderPath, root);
 
+      const rotationToFirmware = function (rotation: number): number {
+        // Reduce the angle to its lowest equivalent form,
+        // negate it to match the firmware rotation direction,
+        // then convert it to radians
+        return (-(rotation % 360) / 180) * Math.PI;
+      }
+
       const definesContent = `
         #define IMU ${firmware.buildConfig.imus[0].type}
         #define SECOND_IMU ${firmware.buildConfig.imus[1].type}
         #define BOARD ${firmware.buildConfig.board.type}
-        #define IMU_ROTATION ${firmware.buildConfig.imus[0].rotation} * PI / 180
-        #define SECOND_IMU_ROTATION ${
-          firmware.buildConfig.imus[1].rotation
-        } * PI / 180
+        #define IMU_ROTATION ${rotationToFirmware(firmware.buildConfig.imus[0].rotation)}
+        #define SECOND_IMU_ROTATION ${rotationToFirmware(firmware.buildConfig.imus[1].rotation)}
 
         #define BATTERY_MONITOR ${firmware.buildConfig.battery.type}
         #define BATTERY_SHIELD_RESISTANCE ${

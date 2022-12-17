@@ -64,7 +64,7 @@ export function ImuConfig({ forced, control, watch, errors, name, imuIndex, imus
                   rules={{ required: ackyuallyEnabled, min: 0, max: 360 }}
                   render={({ field: { onChange, value },  }) => (
                     <>
-                      <TextField error={ackyuallyEnabled && errors.imus && errors.imus[imuIndex] && !!errors.imus[imuIndex].rotation} type="number" disabled={!ackyuallyEnabled} onChange={onChange} value={value}  label={"IMU Roation (DEG)"} />
+                      <TextField error={ackyuallyEnabled && errors.imus && errors.imus[imuIndex] && !!errors.imus[imuIndex].rotation} type="number" disabled={!ackyuallyEnabled} onChange={onChange} value={value}  label={"IMU Rotation (DEG)"} />
                       <HelperComponent text="IMU Rotation configuration" link='https://docs.slimevr.dev/firmware/configuring-project.html#adjust-imu-board-rotation' />
                     </>
                   )}
