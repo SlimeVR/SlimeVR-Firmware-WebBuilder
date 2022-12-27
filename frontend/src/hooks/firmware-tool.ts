@@ -122,9 +122,7 @@ export function useFirmwareTool() {
         if (!espStubRef.current)
           throw new Error('Invalid state. no stub ref')
 
-        await espStubRef.current.eraseFlash()
-        
-       
+
         const totalSize  = downloadedFilesRef.current.reduce((size, file) => size + file.binary.byteLength, 0);
         let totalWriten = 0;
         setStatusValue(0);
