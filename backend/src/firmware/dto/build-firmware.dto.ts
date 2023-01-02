@@ -27,8 +27,8 @@ export class BuildFirmwareDTO {
 
   static completeDefaults(dto: BuildFirmwareDTO): BuildFirmwareDTO {
     const boardInts = {
-      [BoardType.BOARD_SLIMEVR]: ['10', '13'],
-      [BoardType.BOARD_SLIMEVR_DEV]: ['10', '13'],
+      [BoardType.BOARD_SLIMEVR]: ['16', '13'],
+      [BoardType.BOARD_SLIMEVR_DEV]: ['16', '13'],
       [BoardType.BOARD_NODEMCU]: ['D5', 'D6'],
       [BoardType.BOARD_WEMOSD1MINI]: ['D5', 'D6'],
       [BoardType.BOARD_ESP01]: ['255', '255'],
@@ -51,13 +51,13 @@ export class BuildFirmwareDTO {
     if (!dto.board.pins) {
       const boardsPins: { [key: string]: BoardPins } = {
         [BoardType.BOARD_SLIMEVR]: {
-          imuSDA: '4',
-          imuSCL: '5',
+          imuSDA: '14',
+          imuSCL: '12',
           led: '2',
         },
         [BoardType.BOARD_SLIMEVR_DEV]: {
-          imuSDA: '4',
-          imuSCL: '5',
+          imuSDA: '14',
+          imuSCL: '12',
           led: '2',
         },
         [BoardType.BOARD_NODEMCU]: {
