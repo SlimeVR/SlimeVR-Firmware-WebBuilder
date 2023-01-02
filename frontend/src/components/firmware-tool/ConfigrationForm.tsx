@@ -54,7 +54,9 @@ export function ConfigurationForm({ form, nextStep }: { form: any, nextStep: (id
   
   
     const onSubmit = (data: any) => {
-      data.imus = data.imus.map(({ enabled, ...imu }: any) => ({ ...imu }))
+      data.imus = data.imus
+        .filter(({ enabled }: { enabled: boolean }) => !!enabled)
+        .map(({ enabled, ...imu }: any) => ({ ...imu }));
       nextStep(data);
     };
   
