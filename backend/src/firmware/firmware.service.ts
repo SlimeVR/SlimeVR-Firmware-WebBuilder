@@ -445,11 +445,8 @@ export class FirmwareService implements OnApplicationBootstrap {
 
   public async buildFirmware(dto: BuildFirmwareDTO): Promise<BuildResponse> {
     try {
-      const splitVersion = dto.version.split('/', 2);
-
-      const owner = splitVersion.length > 1 ? splitVersion[0] : 'SlimeVR';
+      const [_, owner, version] = dto.version.match(/(.*?)\/(.*)/) || [undefined, 'SlimeVR', dto.version];
       let repo = 'SlimeVR-Tracker-ESP';
-      const version = splitVersion.length > 1 ? splitVersion[1] : splitVersion[0];
 
       // TODO: Make the site say what repo to use, please
       // If there's a matching owner
