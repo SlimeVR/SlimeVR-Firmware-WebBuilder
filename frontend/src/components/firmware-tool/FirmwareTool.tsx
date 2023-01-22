@@ -31,6 +31,7 @@ export function FirmwareTool() {
             <Alert variant="outlined" severity="info" sx={{ my: 2 }}>
                 SlimeVR/vX.X.X - SlimeVR stable release(s)
                 <p><Link href="https://github.com/SlimeVR/SlimeVR-Tracker-ESP/tree/main">SlimeVR/main</Link> - SlimeVR development branch</p>
+                <p><Link href="https://github.com/SlimeVR/SlimeVR-Tracker-ESP/tree/beta/bmi-improvements">SlimeVR/beta/bmi-improvements</Link> - Improves support for the BMI160</p>
                 <p><Link href="https://github.com/deiteris/SlimeVR-Tracker-ESP/tree/qmc-mag-new">deiteris/qmc-mag-new</Link> - For use with the MPU6050/MPU6500 + QMC5883L external magnetometer configuration</p>
                 <p><Link href="https://github.com/deiteris/SlimeVR-Tracker-ESP/tree/hmc-mag">deiteris/hmc-mag</Link> - For use with the MPU6050/MPU6500 + HMC5883L external magnetometer configuration</p>
                 <p><Link href="https://github.com/tianrui233/SlimeVR-Tracker-ESP-For-Kitkat/tree/qmc-axis-aligned-en">tianrui233/qmc-axis-aligned-en</Link> - Forked from "deiteris/qmc-mag-new", but XYZ axis aligned</p>

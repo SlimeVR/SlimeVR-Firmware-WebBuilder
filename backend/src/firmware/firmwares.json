@@ -1,6 +1,6 @@
 {
   "SlimeVR": {
-    "SlimeVR-Tracker-ESP": ["main"]
+    "SlimeVR-Tracker-ESP": ["main", "beta/bmi-improvements"]
   },
   "deiteris": {
     "SlimeVR-Tracker-ESP": ["qmc-mag-new", "hmc-mag"]
