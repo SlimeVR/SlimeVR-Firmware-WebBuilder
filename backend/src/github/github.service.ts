@@ -95,24 +95,23 @@ export class GithubService {
     for (let [owner, repos] of Object.entries(AVAILABLE_FIRMWARE_REPOS)) {
       for (let [repo, branches] of Object.entries(repos)) {
         // Get all repo releases
-        try {
-          releases.push(this.getReleases(owner, repo));
-        } catch (e) {
-          console.error(`Unable to fetch releases for "${owner}/${repo}": `, e);
-        }
+        releases.push(this.getReleases(owner, repo).catch((e) => {throw `Unable to fetch releases for "${owner}/${repo}": ${e}`;}));
 
         // Get each branch as a release version
         for (let branch of branches) {
-          try {
-            releases.push(this.getBranchRelease(owner, repo, branch));
-          } catch (e) {
-            console.error(`Unable to fetch branch release for "${owner}/${repo}/${branch}": `, e);
-          }
+          releases.push(this.getBranchRelease(owner, repo, branch).catch((e) => {throw `Unable to fetch branch release for "${owner}/${repo}/${branch}": ${e}`;}));
         }
       }
     }
 
-    return Promise.all(releases).then(value => value.flat());
+    const settled = await Promise.allSettled(releases);
+    return settled.flatMap(it => {
+      if (it.status === 'fulfilled') {
+        return it.value;
+      }
+      console.warn(it.reason);
+      return []; // Needed for filtering invalid promises
+    });
   }
 
   async getRelease(
