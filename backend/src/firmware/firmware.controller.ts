@@ -38,6 +38,7 @@ export class FirmwareController {
   ) {}
 
   @Get('/')
+  @Header('Cache-Control', 'public, max-age=7200, immutable')
   @ApiResponse({ type: [Firmware] })
   getFirmwares() {
     return this.firmwareService.getFirmwares();
@@ -61,6 +62,7 @@ export class FirmwareController {
   }
 
   @Get('/boards')
+  @Header('Cache-Control', 'public, max-age=7200, immutable')
   @ApiOkResponse({ type: [BoardTypeBoard] })
   getBoardsTypes(): BoardTypeBoard[] {
     return Object.keys(BoardType).map((board) => ({
@@ -70,24 +72,28 @@ export class FirmwareController {
   }
 
   @Get('/versions')
+  @Header('Cache-Control', 'public, max-age=7200, immutable')
   @ApiOkResponse({ type: [ReleaseDTO] })
   async getVersions(): Promise<ReleaseDTO[]> {
     return this.githubService.getAllReleases();
   }
 
   @Get('/imus')
+  @Header('Cache-Control', 'public, max-age=7200, immutable')
   @ApiOkResponse({ type: [IMUDTO] })
   getIMUSTypes(): IMUDTO[] {
     return IMUS;
   }
 
   @Get('/batteries')
+  @Header('Cache-Control', 'public, max-age=7200, immutable')
   @ApiOkResponse({ type: [String] })
   getBatteriesTypes(): string[] {
     return Object.keys(BatteryType);
   }
 
   @Get('/default-config/:board')
+  @Header('Cache-Control', 'public, max-age=7200, immutable')
   @ApiOkResponse({ type: BuildFirmwareDTO })
   getDefaultConfig(@Param('board') board: BoardType): BuildFirmwareDTO {
     const dto = new BuildFirmwareDTO();
