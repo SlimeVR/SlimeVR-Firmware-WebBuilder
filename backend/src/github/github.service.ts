@@ -89,14 +89,14 @@ export class GithubService {
   }
 
   async getAllReleases(): Promise<ReleaseDTO[]> {
-    const releases: ReleaseDTO[] = [];
+    const releases: Promise<ReleaseDTO | ReleaseDTO[]>[] = [];
 
     
     for (let [owner, repos] of Object.entries(AVAILABLE_FIRMWARE_REPOS)) {
       for (let [repo, branches] of Object.entries(repos)) {
         // Get all repo releases
         try {
-          releases.push(...await this.getReleases(owner, repo));
+          releases.push(this.getReleases(owner, repo));
         } catch (e) {
           console.error(`Unable to fetch releases for "${owner}/${repo}": `, e);
         }
@@ -104,7 +104,7 @@ export class GithubService {
         // Get each branch as a release version
         for (let branch of branches) {
           try {
-            releases.push(await this.getBranchRelease(owner, repo, branch));
+            releases.push(this.getBranchRelease(owner, repo, branch));
           } catch (e) {
             console.error(`Unable to fetch branch release for "${owner}/${repo}/${branch}": `, e);
           }
@@ -112,7 +112,7 @@ export class GithubService {
       }
     }
 
-    return releases;
+    return Promise.all(releases).then(value => value.flat());
   }
 
   async getRelease(

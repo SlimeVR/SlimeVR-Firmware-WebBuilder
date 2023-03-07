@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   HttpException,
   HttpStatus,
   Param,
@@ -43,6 +44,7 @@ export class FirmwareController {
   }
 
   @Post('/build')
+  @Header('Cache-Control', 'no-cache')
   @ApiOperation({
     description: 'Build a specific configuration of the firmware',
   })
@@ -53,6 +55,7 @@ export class FirmwareController {
   }
 
   @Sse('/build-status/:id')
+  @Header('Cache-Control', 'no-cache')
   buildStatus(@Param('id') id: string) {
     return this.firmwareService.getBuildStatusSubject(id);
   }
@@ -100,6 +103,7 @@ export class FirmwareController {
   }
 
   @Get('/:id')
+  @Header('Cache-Control', 'no-cache')
   @ApiResponse({ type: Firmware })
   @ApiNotFoundResponse()
   async getFirmware(@Param('id') id: string) {
