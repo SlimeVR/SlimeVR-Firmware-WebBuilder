@@ -95,11 +95,11 @@ export class GithubService {
     for (let [owner, repos] of Object.entries(AVAILABLE_FIRMWARE_REPOS)) {
       for (let [repo, branches] of Object.entries(repos)) {
         // Get all repo releases
-        releases.push(this.getReleases(owner, repo).catch((e) => {throw `Unable to fetch releases for "${owner}/${repo}": ${e}`;}));
+        releases.push(this.getReleases(owner, repo).catch((e) => { throw new Error(`Unable to fetch releases for "${owner}/${repo}"`, { cause: e }); }));
 
         // Get each branch as a release version
         for (let branch of branches) {
-          releases.push(this.getBranchRelease(owner, repo, branch).catch((e) => {throw `Unable to fetch branch release for "${owner}/${repo}/${branch}": ${e}`;}));
+          releases.push(this.getBranchRelease(owner, repo, branch).catch((e) => { throw new Error(`Unable to fetch branch release for "${owner}/${repo}/${branch}"`, { cause: e }); }));
         }
       }
     }
@@ -109,7 +109,7 @@ export class GithubService {
       if (it.status === 'fulfilled') {
         return it.value;
       }
-      console.warn(it.reason);
+      console.warn(`${it.reason.message}: `, it.reason.cause);
       return []; // Needed for filtering invalid promises
     });
   }
