@@ -61,7 +61,7 @@ services:
       - slimevr-network
       - caddy-network
   slimevr-api-s3-init:
-    image: minio/mc
+    image: minio/mc:latest
     depends_on:
       - slimevr-api-s3
     networks:
@@ -72,8 +72,9 @@ services:
     entrypoint: >
       /bin/sh -c "
       /usr/bin/mc alias set slimevr http://slimevr-api-s3:9099 `cat /run/secrets/access_key` `cat /run/secrets/secret_key`;
-      /usr/bin/mc mb slimevr/slimevr-firmware-builds;
-      /usr/bin/mc policy set public slimevr/slimevr-firmware-builds;
+      /usr/bin/mc admin update slimevr;
+      /usr/bin/mc mb --ignore-existing slimevr/slimevr-firmware-builds;
+      /usr/bin/mc anonymous set public slimevr/slimevr-firmware-builds;
       exit 0;
       "
 

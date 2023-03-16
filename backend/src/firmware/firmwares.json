@@ -1,6 +1,6 @@
 {
   "SlimeVR": {
-    "SlimeVR-Tracker-ESP": ["main"]
+    "SlimeVR-Tracker-ESP": ["main", "beta/bmi-improvements"]
   },
   "deiteris": {
     "SlimeVR-Tracker-ESP": ["qmc-mag-new", "hmc-mag"]
@@ -14,7 +14,7 @@
   "0forks": {
     "SlimeVR-Tracker-ESP-BMI160": ["v3dev", "v3dev-bmm"]
   },
-  "ButterscotchV": {
-    "SlimeVR-Tracker-ESP": ["arduino-latest"]
+  "ThreadOfFate": {
+    "SlimeVR-Tracker-ESP": ["IMUAddressUpdate"]
   }
 }
