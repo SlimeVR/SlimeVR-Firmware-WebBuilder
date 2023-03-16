@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   HttpException,
   HttpStatus,
   Param,
@@ -37,12 +38,14 @@ export class FirmwareController {
   ) {}
 
   @Get('/')
+  @Header('Cache-Control', 'public, max-age=7200')
   @ApiResponse({ type: [Firmware] })
   getFirmwares() {
     return this.firmwareService.getFirmwares();
   }
 
   @Post('/build')
+  @Header('Cache-Control', 'no-cache')
   @ApiOperation({
     description: 'Build a specific configuration of the firmware',
   })
@@ -53,11 +56,13 @@ export class FirmwareController {
   }
 
   @Sse('/build-status/:id')
+  @Header('Cache-Control', 'no-cache')
   buildStatus(@Param('id') id: string) {
     return this.firmwareService.getBuildStatusSubject(id);
   }
 
   @Get('/boards')
+  @Header('Cache-Control', 'public, max-age=7200')
   @ApiOkResponse({ type: [BoardTypeBoard] })
   getBoardsTypes(): BoardTypeBoard[] {
     return Object.keys(BoardType).map((board) => ({
@@ -67,24 +72,28 @@ export class FirmwareController {
   }
 
   @Get('/versions')
+  @Header('Cache-Control', 'public, max-age=7200')
   @ApiOkResponse({ type: [ReleaseDTO] })
   async getVersions(): Promise<ReleaseDTO[]> {
     return this.githubService.getAllReleases();
   }
 
   @Get('/imus')
+  @Header('Cache-Control', 'public, max-age=7200')
   @ApiOkResponse({ type: [IMUDTO] })
   getIMUSTypes(): IMUDTO[] {
     return IMUS;
   }
 
   @Get('/batteries')
+  @Header('Cache-Control', 'public, max-age=7200')
   @ApiOkResponse({ type: [String] })
   getBatteriesTypes(): string[] {
     return Object.keys(BatteryType);
   }
 
   @Get('/default-config/:board')
+  @Header('Cache-Control', 'public, max-age=7200')
   @ApiOkResponse({ type: BuildFirmwareDTO })
   getDefaultConfig(@Param('board') board: BoardType): BuildFirmwareDTO {
     const dto = new BuildFirmwareDTO();
@@ -100,6 +109,7 @@ export class FirmwareController {
   }
 
   @Get('/:id')
+  @Header('Cache-Control', 'no-cache')
   @ApiResponse({ type: Firmware })
   @ApiNotFoundResponse()
   async getFirmware(@Param('id') id: string) {

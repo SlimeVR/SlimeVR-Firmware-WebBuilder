@@ -89,30 +89,29 @@ export class GithubService {
   }
 
   async getAllReleases(): Promise<ReleaseDTO[]> {
-    const releases: ReleaseDTO[] = [];
+    const releases: Promise<ReleaseDTO | ReleaseDTO[]>[] = [];
 
     
     for (let [owner, repos] of Object.entries(AVAILABLE_FIRMWARE_REPOS)) {
       for (let [repo, branches] of Object.entries(repos)) {
         // Get all repo releases
-        try {
-          releases.push(...await this.getReleases(owner, repo));
-        } catch (e) {
-          console.error(`Unable to fetch releases for "${owner}/${repo}": `, e);
-        }
+        releases.push(this.getReleases(owner, repo).catch((e) => { throw new Error(`Unable to fetch releases for "${owner}/${repo}"`, { cause: e }); }));
 
         // Get each branch as a release version
         for (let branch of branches) {
-          try {
-            releases.push(await this.getBranchRelease(owner, repo, branch));
-          } catch (e) {
-            console.error(`Unable to fetch branch release for "${owner}/${repo}/${branch}": `, e);
-          }
+          releases.push(this.getBranchRelease(owner, repo, branch).catch((e) => { throw new Error(`Unable to fetch branch release for "${owner}/${repo}/${branch}"`, { cause: e }); }));
         }
       }
     }
 
-    return releases;
+    const settled = await Promise.allSettled(releases);
+    return settled.flatMap(it => {
+      if (it.status === 'fulfilled') {
+        return it.value;
+      }
+      console.warn(`${it.reason.message}: `, it.reason.cause);
+      return []; // Needed for filtering invalid promises
+    });
   }
 
   async getRelease(
