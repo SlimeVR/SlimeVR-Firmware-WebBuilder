@@ -5,7 +5,7 @@
   "deiteris": {
     "SlimeVR-Tracker-ESP": ["qmc-mag-new", "hmc-mag"]
   },
-  "tianrui233": {
+  "TheBug233": {
     "SlimeVR-Tracker-ESP-For-Kitkat": ["qmc-axis-aligned-en"]
   },
   "Lupinixx": {
@@ -16,5 +16,11 @@
   },
   "ThreadOfFate": {
     "SlimeVR-Tracker-ESP": ["IMUAddressUpdate"]
+  },
+  "unlogisch04": {
+    "SlimeVR-Tracker-ESP": ["feat_commitid"]
+  },
+  "ButterscotchV": {
+    "SlimeVR-Tracker-ESP": ["bmi-plus-address-fix", "mag-enabled-stable", "mag-enabled-main"]
   }
 }

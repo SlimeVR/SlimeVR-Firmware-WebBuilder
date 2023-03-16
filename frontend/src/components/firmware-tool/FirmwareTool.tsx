@@ -34,11 +34,15 @@ export function FirmwareTool() {
                 <p><Link href="https://github.com/SlimeVR/SlimeVR-Tracker-ESP/tree/beta/bmi-improvements">SlimeVR/beta/bmi-improvements</Link> - Improves support for the BMI160</p>
                 <p><Link href="https://github.com/deiteris/SlimeVR-Tracker-ESP/tree/qmc-mag-new">deiteris/qmc-mag-new</Link> - For use with the MPU6050/MPU6500 + QMC5883L external magnetometer configuration</p>
                 <p><Link href="https://github.com/deiteris/SlimeVR-Tracker-ESP/tree/hmc-mag">deiteris/hmc-mag</Link> - For use with the MPU6050/MPU6500 + HMC5883L external magnetometer configuration</p>
-                <p><Link href="https://github.com/tianrui233/SlimeVR-Tracker-ESP-For-Kitkat/tree/qmc-axis-aligned-en">tianrui233/qmc-axis-aligned-en</Link> - Forked from "deiteris/qmc-mag-new", but XYZ axis aligned</p>
+                <p><Link href="https://github.com/TheBug233/SlimeVR-Tracker-ESP-For-Kitkat/tree/qmc-axis-aligned-en">TheBug233/qmc-axis-aligned-en</Link> - Forked from "deiteris/qmc-mag-new", but XYZ axis aligned</p>
                 <p><Link href="https://github.com/Lupinixx/SlimeVR-Tracker-ESP/tree/mpu6050-fifo">Lupinixx/mpu6050-fifo</Link> - Attempts to use a FIFO + VQF filter for the imu</p>
                 <p><Link href="https://github.com/0forks/SlimeVR-Tracker-ESP-BMI160/tree/v3dev">0forks/v3dev</Link> - Improves support for the BMI160</p>
                 <p><Link href="https://github.com/0forks/SlimeVR-Tracker-ESP-BMI160/tree/v3dev-bmm">0forks/v3dev-bmm</Link> - Improves support for the BMI160 and adds support for the BMM150</p>
                 <p><Link href="https://github.com/ThreadOfFate/SlimeVR-Tracker-ESP/tree/IMUAddressUpdate">ThreadOfFate/IMUAddressUpdate</Link> - Fixes IMU sensorIDs</p>
+                <p><Link href="https://github.com/unlogisch04/SlimeVR-Tracker-ESP/tree/feat_commitid">unlogisch04/feat_commitid</Link> - Testing adding git commit ID info</p>
+                <p><Link href="https://github.com/ButterscotchV/SlimeVR-Tracker-ESP/tree/bmi-plus-address-fix">ButterscotchV/bmi-plus-address-fix</Link> - Merged SlimeVR/beta/bmi-improvements and ThreadOfFate/IMUAddressUpdate</p>
+                <p><Link href="https://github.com/ButterscotchV/SlimeVR-Tracker-ESP/tree/mag-enabled-stable">ButterscotchV/mag-enabled-stable</Link> - The latest stable firmware release with 9 DoF ICM-20948 and BNO0xx (magnetometer enabled)</p>
+                <p><Link href="https://github.com/ButterscotchV/SlimeVR-Tracker-ESP/tree/mag-enabled-main">ButterscotchV/mag-enabled-main</Link> - Based off SlimeVR/main with 9 DoF ICM-20948 and BNO0xx (magnetometer enabled)</p>
             </Alert>
             <Alert variant="filled" severity="warning" sx={{ my: 2 }}>
                 IMPORTANT NOTICE: The IMU Rotation option has changed, please be aware that the values used before may need to be modified to function properly (90 deg and 270 deg have been swapped, so it should now follow SlimeVR's documentation).
