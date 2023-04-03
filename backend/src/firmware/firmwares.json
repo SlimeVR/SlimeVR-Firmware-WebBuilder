@@ -1,6 +1,6 @@
 {
   "SlimeVR": {
-    "SlimeVR-Tracker-ESP": ["main", "beta/bmi-improvements"]
+    "SlimeVR-Tracker-ESP": ["main"]
   },
   "deiteris": {
     "SlimeVR-Tracker-ESP": ["qmc-mag-new", "hmc-mag"]
@@ -14,13 +14,10 @@
   "0forks": {
     "SlimeVR-Tracker-ESP-BMI160": ["v3dev", "v3dev-bmm"]
   },
-  "ThreadOfFate": {
-    "SlimeVR-Tracker-ESP": ["IMUAddressUpdate"]
-  },
   "unlogisch04": {
     "SlimeVR-Tracker-ESP": ["feat_commitid"]
   },
   "ButterscotchV": {
-    "SlimeVR-Tracker-ESP": ["bmi-plus-address-fix", "mag-enabled-stable", "mag-enabled-main"]
+    "SlimeVR-Tracker-ESP": ["mag-enabled-stable", "mag-enabled-main"]
   }
 }
