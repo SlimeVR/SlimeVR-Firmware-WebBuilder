@@ -19,5 +19,8 @@
   },
   "ButterscotchV": {
     "SlimeVR-Tracker-ESP": ["mag-enabled-stable", "mag-enabled-main"]
+  },
+  "nekomona": {
+    "SlimeVR-Tracker-ESP": ["unify-fusion"]
   }
 }

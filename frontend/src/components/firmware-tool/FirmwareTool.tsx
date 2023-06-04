@@ -40,6 +40,7 @@ export function FirmwareTool() {
                 <p><Link href="https://github.com/unlogisch04/SlimeVR-Tracker-ESP/tree/feat_commitid">unlogisch04/feat_commitid</Link> - Testing adding git commit ID info</p>
                 <p><Link href="https://github.com/ButterscotchV/SlimeVR-Tracker-ESP/tree/mag-enabled-stable">ButterscotchV/mag-enabled-stable</Link> - The latest stable firmware release with 9 DoF ICM-20948 and BNO0xx (magnetometer enabled)</p>
                 <p><Link href="https://github.com/ButterscotchV/SlimeVR-Tracker-ESP/tree/mag-enabled-main">ButterscotchV/mag-enabled-main</Link> - Based off SlimeVR/main with 9 DoF ICM-20948 and BNO0xx (magnetometer enabled)</p>
+                <p><Link href="https://github.com/nekomona/SlimeVR-Tracker-ESP/tree/unify-fusion">nekomona/unify-fusion</Link> - Unifying sensor fusion code</p>
             </Alert>
             <Alert variant="filled" severity="warning" sx={{ my: 2 }}>
                 IMPORTANT NOTICE: The IMU Rotation option has changed, please be aware that the values used before may need to be modified to function properly (90 deg and 270 deg have been swapped, so it should now follow SlimeVR's documentation).
