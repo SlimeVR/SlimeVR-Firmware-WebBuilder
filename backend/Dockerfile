@@ -1,7 +1,7 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 RUN apt-get update \
-	&& apt-get install -y build-essential libssl-dev libffi-dev python python3-pip git curl
+	&& apt-get install -y build-essential libssl-dev libffi-dev python3 python3-pip git curl
 
 RUN python3 --version
 RUN curl -fsSL https://raw.githubusercontent.com/platformio/platformio-core-installer/master/get-platformio.py -o get-platformio.py
