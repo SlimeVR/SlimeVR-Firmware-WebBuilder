@@ -363,6 +363,12 @@ export class FirmwareService implements OnApplicationBootstrap {
           `platformio run -e ${firmware.buildConfig.board.type} -c platformio-tools.ini`,
           {
             cwd: rootFoler,
+            env: {
+              // Keep existing variables
+              ...process.env,
+              // Git commit hash or release tag
+              GIT_REV: release.id,
+            }
           },
         );
 
