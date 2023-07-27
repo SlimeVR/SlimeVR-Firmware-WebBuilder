@@ -81,7 +81,7 @@
     "start": "node scripts/start.js",
     "build": "node scripts/build.js",
     "test": "node scripts/test.js",
-    "generate-types": "restful-react import --url http://localhost:3000/api-json --output src/generated-types.tsx"
+    "generate-types": "restful-react import --url http://127.0.0.1:3000/api-json --output src/generated-types.tsx"
   },
   "eslintConfig": {
     "extends": [
