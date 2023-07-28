@@ -6,7 +6,10 @@ import { configProvider, configService } from 'src/config/config.service';
 @Module({
   imports: [
     CacheModule.register(),
-    FetchModule.config({ baseUrl: 'https://api.github.com', headers: { Authorization: `Basic ${configService.getGitHubAuth()}` } }),
+    FetchModule.config({
+      baseUrl: 'https://api.github.com',
+      headers: { Authorization: `Basic ${configService.getGitHubAuth()}` },
+    }),
   ],
   providers: [GithubService, configProvider],
   exports: [GithubService],
