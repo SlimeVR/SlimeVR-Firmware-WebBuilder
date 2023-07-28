@@ -66,9 +66,9 @@ export class FirmwareService implements OnApplicationBootstrap {
   }
 
   public async cleanAllOldReleases() {
-    for (let [owner, repos] of Object.entries(AVAILABLE_FIRMWARE_REPOS)) {
-      for (let [repo, branches] of Object.entries(repos)) {
-        for (let branch of branches) {
+    for (const [owner, repos] of Object.entries(AVAILABLE_FIRMWARE_REPOS)) {
+      for (const [repo, branches] of Object.entries(repos)) {
+        for (const branch of branches) {
           this.cleanOldReleases(owner, repo, branch);
         }
       }
@@ -76,10 +76,10 @@ export class FirmwareService implements OnApplicationBootstrap {
   }
 
   public async cleanOldReleases(
-      owner: string = 'SlimeVR',
-      repo: string = 'SlimeVR-Tracker-ESP',
-      branch: string = 'main',
-    ): Promise<void> {
+    owner = 'SlimeVR',
+    repo = 'SlimeVR-Tracker-ESP',
+    branch = 'main',
+  ): Promise<void> {
     const branchRelease = await this.githubService.getRelease(
       owner,
       repo,
@@ -271,7 +271,10 @@ export class FirmwareService implements OnApplicationBootstrap {
 
       tmpDir = await mkdtemp(path.join(os.tmpdir(), 'slimevr-api'));
 
-      const releaseFileName = `release-${release.name.replace(/[^A-Za-z0-9. ]/gi, '_')}.zip`;
+      const releaseFileName = `release-${release.name.replace(
+        /[^A-Za-z0-9. ]/gi,
+        '_',
+      )}.zip`;
       const releaseFilePath = path.join(tmpDir, releaseFileName);
 
       const downloadFile = async (url: string, path: string) => {
@@ -321,14 +324,18 @@ export class FirmwareService implements OnApplicationBootstrap {
         // negate it to match the firmware rotation direction,
         // then convert it to radians
         return (-(rotation % 360) / 180) * Math.PI;
-      }
+      };
 
       const definesContent = `
         #define IMU ${firmware.buildConfig.imus[0].type}
         #define SECOND_IMU ${firmware.buildConfig.imus[1].type}
         #define BOARD ${firmware.buildConfig.board.type}
-        #define IMU_ROTATION ${rotationToFirmware(firmware.buildConfig.imus[0].rotation)}
-        #define SECOND_IMU_ROTATION ${rotationToFirmware(firmware.buildConfig.imus[1].rotation)}
+        #define IMU_ROTATION ${rotationToFirmware(
+          firmware.buildConfig.imus[0].rotation,
+        )}
+        #define SECOND_IMU_ROTATION ${rotationToFirmware(
+          firmware.buildConfig.imus[1].rotation,
+        )}
 
         #define BATTERY_MONITOR ${firmware.buildConfig.battery.type}
         #define BATTERY_SHIELD_RESISTANCE ${
@@ -368,7 +375,7 @@ export class FirmwareService implements OnApplicationBootstrap {
               ...process.env,
               // Git commit hash or release tag
               GIT_REV: release.id,
-            }
+            },
           },
         );
 
@@ -451,14 +458,18 @@ export class FirmwareService implements OnApplicationBootstrap {
 
   public async buildFirmware(dto: BuildFirmwareDTO): Promise<BuildResponse> {
     try {
-      const [_, owner, version] = dto.version.match(/(.*?)\/(.*)/) || [undefined, 'SlimeVR', dto.version];
+      const [_, owner, version] = dto.version.match(/(.*?)\/(.*)/) || [
+        undefined,
+        'SlimeVR',
+        dto.version,
+      ];
       let repo = 'SlimeVR-Tracker-ESP';
 
       // TODO: Make the site say what repo to use, please
       // If there's a matching owner
-      let ownerRepos = AVAILABLE_FIRMWARE_REPOS[owner];
+      const ownerRepos = AVAILABLE_FIRMWARE_REPOS[owner];
       if (ownerRepos !== undefined) {
-        for (let [repoToSearch, branches] of Object.entries(ownerRepos)) {
+        for (const [repoToSearch, branches] of Object.entries(ownerRepos)) {
           // And a matching branch
           if (Array.isArray(branches) && branches.includes(version)) {
             // This is the target repo *probably*
@@ -468,11 +479,7 @@ export class FirmwareService implements OnApplicationBootstrap {
         }
       }
 
-      const release = await this.githubService.getRelease(
-        owner,
-        repo,
-        version,
-      );
+      const release = await this.githubService.getRelease(owner, repo, version);
 
       dto = BuildFirmwareDTO.completeDefaults(dto);
 

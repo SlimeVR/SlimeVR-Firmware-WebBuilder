@@ -13,7 +13,10 @@ export function ImuConfig({ forced, control, watch, errors, name, imuIndex, imus
     const ackyuallyEnabled = forced || watch(`${controlPrefix}.enabled`);
     const type = watch(`${controlPrefix}.type`);
 
-    const currentImu = useMemo(() => imus?.find(({ type: t }) => t === type), [type, imus]);
+    const sortedImus = imus?.sort((a, b) => {
+      return a.type.localeCompare(b.type);
+    });
+    const currentImu = useMemo(() => sortedImus?.find(({ type: t }) => t === type), [type, sortedImus]);
 
 
     return (
@@ -48,7 +51,7 @@ export function ImuConfig({ forced, control, watch, errors, name, imuIndex, imus
                       >
                         {imusLoading && <MenuItem value="loading" disabled>Loading</MenuItem>}
                         <MenuItem value="none" disabled>Please select the imu type</MenuItem>
-                        {!imusLoading && imus && imus!.map((item) => <MenuItem key={item.type} value={item.type}>{item.type}</MenuItem>) }
+                        {!imusLoading && sortedImus && sortedImus!.map((item) => <MenuItem key={item.type} value={item.type}>{item.type}</MenuItem>) }
                       </Select>
                     </>
                   

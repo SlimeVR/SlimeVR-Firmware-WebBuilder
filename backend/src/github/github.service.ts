@@ -32,7 +32,7 @@ export class GithubService {
   private async getBranchRelease(
     owner: string,
     repo: string,
-    branch: string = 'main',
+    branch = 'main',
   ): Promise<ReleaseDTO> {
     return this.cacheManager.wrap(
       `/repos/${owner}/${repo}/branches/${branch}`,
@@ -49,8 +49,7 @@ export class GithubService {
         return {
           id: sha,
           name: `${owner}/${branch}`,
-          zipball_url:
-            `https://github.com/${owner}/${repo}/archive/refs/heads/${branch}.zip`,
+          zipball_url: `https://github.com/${owner}/${repo}/archive/refs/heads/${branch}.zip`,
           prerelease: false,
           draft: false,
           url: `https://github.com/${owner}/${repo}/archive/refs/heads/${branch}.zip`,
@@ -80,7 +79,12 @@ export class GithubService {
               zipball_url,
             }))
             .filter(
-              ({ name }) => !['SlimeVR/v0.2.0', 'SlimeVR/v0.2.1', 'SlimeVR/v0.2.2'].includes(name),
+              ({ name }) =>
+                ![
+                  'SlimeVR/v0.2.0',
+                  'SlimeVR/v0.2.1',
+                  'SlimeVR/v0.2.2',
+                ].includes(name),
             ),
         ];
       },
@@ -91,21 +95,33 @@ export class GithubService {
   async getAllReleases(): Promise<ReleaseDTO[]> {
     const releases: Promise<ReleaseDTO | ReleaseDTO[]>[] = [];
 
-    
-    for (let [owner, repos] of Object.entries(AVAILABLE_FIRMWARE_REPOS)) {
-      for (let [repo, branches] of Object.entries(repos)) {
+    for (const [owner, repos] of Object.entries(AVAILABLE_FIRMWARE_REPOS)) {
+      for (const [repo, branches] of Object.entries(repos)) {
         // Get all repo releases
-        releases.push(this.getReleases(owner, repo).catch((e) => { throw new Error(`Unable to fetch releases for "${owner}/${repo}"`, { cause: e }); }));
+        releases.push(
+          this.getReleases(owner, repo).catch((e) => {
+            throw new Error(`Unable to fetch releases for "${owner}/${repo}"`, {
+              cause: e,
+            });
+          }),
+        );
 
         // Get each branch as a release version
-        for (let branch of branches) {
-          releases.push(this.getBranchRelease(owner, repo, branch).catch((e) => { throw new Error(`Unable to fetch branch release for "${owner}/${repo}/${branch}"`, { cause: e }); }));
+        for (const branch of branches) {
+          releases.push(
+            this.getBranchRelease(owner, repo, branch).catch((e) => {
+              throw new Error(
+                `Unable to fetch branch release for "${owner}/${repo}/${branch}"`,
+                { cause: e },
+              );
+            }),
+          );
         }
       }
     }
 
     const settled = await Promise.allSettled(releases);
-    return settled.flatMap(it => {
+    return settled.flatMap((it) => {
       if (it.status === 'fulfilled') {
         return it.value;
       }
@@ -121,10 +137,10 @@ export class GithubService {
   ): Promise<ReleaseDTO> {
     // TODO: Replace this with a part of the request indicating whether this is a branch or a release
     // If there's a matching owner
-    let ownerRepos = AVAILABLE_FIRMWARE_REPOS[owner];
+    const ownerRepos = AVAILABLE_FIRMWARE_REPOS[owner];
     if (ownerRepos !== undefined) {
       // And a matching repo
-      let repoBranches = ownerRepos[repo];
+      const repoBranches = ownerRepos[repo];
       if (repoBranches !== undefined) {
         // And a matching branch
         if (repoBranches.includes(version)) {
@@ -143,7 +159,14 @@ export class GithubService {
           `/repos/${owner}/${repo}/releases/tags/${version}`,
           {},
         );
-        return { id: `${id}`, url, prerelease, draft, name: `${owner}/${name}`, zipball_url }; //TODO: complete this
+        return {
+          id: `${id}`,
+          url,
+          prerelease,
+          draft,
+          name: `${owner}/${name}`,
+          zipball_url,
+        }; //TODO: complete this
       },
       { ttl: 5 * 60 },
     );
