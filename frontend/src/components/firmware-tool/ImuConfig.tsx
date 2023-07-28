@@ -13,7 +13,9 @@ export function ImuConfig({ forced, control, watch, errors, name, imuIndex, imus
     const ackyuallyEnabled = forced || watch(`${controlPrefix}.enabled`);
     const type = watch(`${controlPrefix}.type`);
 
-    const sortedImus = imus?.sort();
+    const sortedImus = imus?.sort((a, b) => {
+      return a.type.localeCompare(b.type);
+    });
     const currentImu = useMemo(() => sortedImus?.find(({ type: t }) => t === type), [type, sortedImus]);
 
 
