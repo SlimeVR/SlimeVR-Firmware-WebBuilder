@@ -14,8 +14,6 @@ import fetch from 'node-fetch';
 import { BoardType } from './dto/firmware-board.dto';
 import { exec } from 'child_process';
 import { Not } from 'typeorm';
-import { InjectS3 } from 'nestjs-s3';
-import { S3 } from 'aws-sdk';
 import { APP_CONFIG, ConfigService } from 'src/config/config.service';
 import { debounceTime, filter, map, Subject } from 'rxjs';
 import { BuildStatusMessage } from './dto/build-status-message.dto';
@@ -23,13 +21,20 @@ import {
   AVAILABLE_FIRMWARE_REPOS,
   AVAILABLE_BOARDS,
 } from './firmware.constants';
+import {
+  DeleteObjectsCommand,
+  ListObjectsV2Command,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
+import { InjectAws } from 'aws-sdk-v3-nest';
 
 @Injectable()
 export class FirmwareService implements OnApplicationBootstrap {
   private readonly buildStatusSubject = new Subject<BuildStatusMessage>();
 
   constructor(
-    @InjectS3() private s3: S3,
+    @InjectAws(S3Client) private readonly s3: S3Client,
     private githubService: GithubService,
     @Inject(APP_CONFIG) private appConfig: ConfigService,
   ) {}
@@ -124,12 +129,12 @@ export class FirmwareService implements OnApplicationBootstrap {
   }
 
   public async emptyS3Directory(bucket, dir) {
-    const listParams = {
+    const listObjectsV2 = new ListObjectsV2Command({
       Bucket: bucket,
       Prefix: dir,
-    };
+    });
 
-    const listedObjects = await this.s3.listObjectsV2(listParams).promise();
+    const listedObjects = await this.s3.send(listObjectsV2);
 
     if (listedObjects.Contents.length === 0) return;
 
@@ -142,19 +147,18 @@ export class FirmwareService implements OnApplicationBootstrap {
       deleteParams.Delete.Objects.push({ Key });
     });
 
-    await this.s3.deleteObjects(deleteParams).promise();
+    await this.s3.send(new DeleteObjectsCommand(deleteParams));
 
     if (listedObjects.IsTruncated) await this.emptyS3Directory(bucket, dir);
   }
 
   uploadFirmware(id: string, name: string, buffer: Buffer) {
-    return this.s3
-      .upload({
-        Bucket: this.appConfig.getBuildsBucket(),
-        Key: path.join(id, name),
-        Body: buffer,
-      })
-      .promise();
+    const upload = new PutObjectCommand({
+      Bucket: this.appConfig.getBuildsBucket(),
+      Key: path.join(id, name),
+      Body: buffer,
+    });
+    return this.s3.send(upload);
   }
 
   public getFirmwareLink(id: string) {
@@ -363,7 +367,7 @@ export class FirmwareService implements OnApplicationBootstrap {
 
   public async buildFirmware(dto: BuildFirmwareDTO): Promise<BuildResponse> {
     try {
-      const [_, owner, version] = dto.version.match(/(.*?)\/(.*)/) || [
+      const [, owner, version] = dto.version.match(/(.*?)\/(.*)/) || [
         undefined,
         'SlimeVR',
         dto.version,

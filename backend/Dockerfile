@@ -11,7 +11,7 @@ ENV PATH="${PATH}:/root/.platformio/penv/bin"
 
 
 
-RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash -
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
 RUN apt install -y nodejs
 
 WORKDIR /app

@@ -1,7 +1,7 @@
-import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { S3ClientConfig } from '@aws-sdk/client-s3';
 import * as dotenv from 'dotenv';
-import { S3ModuleOptions } from 'nestjs-s3';
-import { decode, encode } from 'universal-base64url';
+import { readFile } from 'fs/promises';
+import { encode } from 'universal-base64url';
 
 dotenv.config();
 
@@ -49,15 +49,15 @@ export class ConfigService {
     }
   }
 
-  public getS3Config(): S3ModuleOptions {
+  public async getS3Config(): Promise<S3ClientConfig> {
     return {
-      config: {
-        accessKeyId: this.getValue('S3_ACCESS_KEY'),
-        secretAccessKey: this.getValue('S3_SECRET_KEY'),
-        endpoint: this.getS3Endpoint(),
-        s3ForcePathStyle: true,
-        signatureVersion: 'v4',
+      region: 'us-east-1',
+      endpoint: this.getS3Endpoint(),
+      credentials: {
+        accessKeyId: (await readFile('/run/secrets/access_key')).toString(),
+        secretAccessKey: (await readFile('/run/secrets/secret_key')).toString(),
       },
+      forcePathStyle: true,
     };
   }
 
@@ -90,7 +90,7 @@ const configService = new ConfigService(process.env).ensureValues([
   'S3_ENDPOINT',
   'S3_BUILDS_BUCKET',
   'GITHUB_AUTH',
-  'HOST_URL'
+  'HOST_URL',
 ]);
 
 const APP_CONFIG = 'APP_CONFIG';

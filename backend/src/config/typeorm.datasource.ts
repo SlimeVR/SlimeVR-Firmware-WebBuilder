@@ -1,10 +1,7 @@
 import { DataSource } from 'typeorm';
 
-console.log( process.env)
-
 export const connectionSource = new DataSource({
   type: 'postgres',
-
   host: process.env.POSTGRES_HOST,
   port: +process.env.POSTGRES_PORT,
   username: process.env.POSTGRES_USER,
