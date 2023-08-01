@@ -49,30 +49,6 @@ export class ConfigService {
     }
   }
 
-  public getTypeOrmConfig(): TypeOrmModuleOptions {
-    return {
-      type: 'postgres',
-
-      host: this.getValue('POSTGRES_HOST'),
-      port: +this.getValue('POSTGRES_PORT'),
-      username: this.getValue('POSTGRES_USER'),
-      password: this.getValue('POSTGRES_PASSWORD'),
-      database: this.getValue('POSTGRES_DATABASE'),
-      synchronize: this.appEnv() !== EnvType.PROD,
-      migrationsTableName: 'migration',
-      cache: {
-        duration: 30000,
-      },
-
-      entities: ['dist/**/*.entity.js'],
-      migrations: ['dist/migrations/*.js'],
-      cli: {
-        migrationsDir: 'dist/migrations',
-      },
-      logging: this.appEnv() == EnvType.PROD ? false : 'all',
-    };
-  }
-
   public getS3Config(): S3ModuleOptions {
     return {
       config: {
@@ -96,6 +72,10 @@ export class ConfigService {
   public getGitHubAuth() {
     return encode(this.getValue('GITHUB_AUTH', true));
   }
+
+  public getHostUrl() {
+    return encode(this.getValue('HOST_URL', true));
+  }
 }
 
 const configService = new ConfigService(process.env).ensureValues([
@@ -110,6 +90,7 @@ const configService = new ConfigService(process.env).ensureValues([
   'S3_ENDPOINT',
   'S3_BUILDS_BUCKET',
   'GITHUB_AUTH',
+  'HOST_URL'
 ]);
 
 const APP_CONFIG = 'APP_CONFIG';

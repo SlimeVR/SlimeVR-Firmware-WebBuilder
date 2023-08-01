@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { useContainer } from 'class-validator';
 import { AppModule } from './app.module';
+import { configService } from './config/config.service';
 
 async function bootstrap() {
   process.on('unhandledRejection', (reason, p) => {
@@ -10,7 +11,7 @@ async function bootstrap() {
   });
 
   const corsWhitelist = [
-    'https://slimevr-firmware-tool.futurabeast.com',
+    configService.getHostUrl(),
     'http://localhost:3000',
     'http://localhost:3001',
   ];
@@ -39,7 +40,7 @@ async function bootstrap() {
       defaultModelRendering: 'model',
     },
   });
-  app.useGlobalPipes(new ValidationPipe({ transform: true }));
+  app.useGlobalPipes(new ValidationPipe({ transform: true })); // Use Class validator on all endpoints for all input and output payloads
   useContainer(app.select(AppModule), { fallbackOnErrors: true }); // Allow injectable into classvalidator
 
   await app.listen(3000);

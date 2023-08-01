@@ -8,18 +8,21 @@ import { VersionNotFoundExeption } from './errors/version-not-found.error';
 import os from 'os';
 import fs from 'fs';
 import { mkdtemp, readdir, readFile, rm, writeFile } from 'fs/promises';
-import path from 'path';
+import path, { join } from 'path';
 import AdmZip from 'adm-zip';
 import fetch from 'node-fetch';
 import { BoardType } from './dto/firmware-board.dto';
 import { exec } from 'child_process';
-import { getConnection, Not } from 'typeorm';
+import { Not } from 'typeorm';
 import { InjectS3 } from 'nestjs-s3';
 import { S3 } from 'aws-sdk';
 import { APP_CONFIG, ConfigService } from 'src/config/config.service';
 import { debounceTime, filter, map, Subject } from 'rxjs';
 import { BuildStatusMessage } from './dto/build-status-message.dto';
-import { AVAILABLE_FIRMWARE_REPOS } from './firmware.constants';
+import {
+  AVAILABLE_FIRMWARE_REPOS,
+  AVAILABLE_BOARDS,
+} from './firmware.constants';
 
 @Injectable()
 export class FirmwareService implements OnApplicationBootstrap {
@@ -48,8 +51,7 @@ export class FirmwareService implements OnApplicationBootstrap {
   }
 
   public async onApplicationBootstrap() {
-    await getConnection()
-      .createQueryBuilder()
+    await Firmware.createQueryBuilder()
       .update(Firmware)
       .set({
         buildStatus: BuildStatus.FAILED,
@@ -109,116 +111,16 @@ export class FirmwareService implements OnApplicationBootstrap {
   }
 
   public getBoard(boardType: BoardType): string {
-    const types = {
-      [BoardType.BOARD_SLIMEVR]: 'esp12e',
-      [BoardType.BOARD_SLIMEVR_DEV]: 'esp12e',
-      [BoardType.BOARD_NODEMCU]: 'esp12e',
-      [BoardType.BOARD_WEMOSD1MINI]: 'esp12e',
-      [BoardType.BOARD_TTGO_TBASE]: 'esp12e',
-      [BoardType.BOARD_WROOM32]: 'esp32dev',
-      [BoardType.BOARD_ESP01]: 'esp32dev',
-    };
-    return types[boardType];
+    return AVAILABLE_BOARDS[boardType].board;
   }
 
-  private getFiles(
+  private getPartitions(
     boardType: BoardType,
     rootFoler: string,
   ): { path: string; offset: number }[] {
-    const types = {
-      [BoardType.BOARD_SLIMEVR]: [
-        {
-          path: path.join(rootFoler, `.pio/build/BOARD_SLIMEVR/firmware.bin`),
-          offset: 0,
-        },
-      ],
-      [BoardType.BOARD_SLIMEVR_DEV]: [
-        {
-          path: path.join(
-            rootFoler,
-            `.pio/build/BOARD_SLIMEVR_DEV/firmware.bin`,
-          ),
-          offset: 0,
-        },
-      ],
-      [BoardType.BOARD_NODEMCU]: [
-        {
-          path: path.join(rootFoler, `.pio/build/BOARD_NODEMCU/firmware.bin`),
-          offset: 0,
-        },
-      ],
-      [BoardType.BOARD_WEMOSD1MINI]: [
-        {
-          path: path.join(
-            rootFoler,
-            `.pio/build/BOARD_WEMOSD1MINI/firmware.bin`,
-          ),
-          offset: 0,
-        },
-      ],
-      [BoardType.BOARD_TTGO_TBASE]: [
-        {
-          path: '/root/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/bin/bootloader_dio_40m.bin',
-          offset: 0x1000,
-        },
-        {
-          path: path.join(
-            rootFoler,
-            `.pio/build/BOARD_TTGO_TBASE/partitions.bin`,
-          ),
-          offset: 0x8000,
-        },
-        {
-          path: '/root/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin',
-          offset: 0xe000,
-        },
-        {
-          path: path.join(
-            rootFoler,
-            `.pio/build/BOARD_TTGO_TBASE/firmware.bin`,
-          ),
-          offset: 0x10000,
-        },
-      ],
-      [BoardType.BOARD_WROOM32]: [
-        {
-          path: '/root/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/bin/bootloader_dio_40m.bin',
-          offset: 0x1000,
-        },
-        {
-          path: path.join(rootFoler, `.pio/build/BOARD_WROOM32/partitions.bin`),
-          offset: 0x8000,
-        },
-        {
-          path: '/root/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin',
-          offset: 0xe000,
-        },
-        {
-          path: path.join(rootFoler, `.pio/build/BOARD_WROOM32/firmware.bin`),
-          offset: 0x10000,
-        },
-      ],
-      [BoardType.BOARD_ESP01]: [
-        {
-          path: '/root/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/bin/bootloader_dio_40m.bin',
-          offset: 0x1000,
-        },
-        {
-          path: path.join(rootFoler, `.pio/build/BOARD_ESP01/partitions.bin`),
-          offset: 0x8000,
-        },
-        {
-          path: '/root/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin',
-          offset: 0xe000,
-        },
-        {
-          path: path.join(rootFoler, `.pio/build/BOARD_ESP01/firmware.bin`),
-          offset: 0x10000,
-        },
-      ],
-    };
-
-    return types[boardType];
+    return AVAILABLE_BOARDS[boardType].partitions.map(
+      ({ path, ...fields }) => ({ ...fields, path: join(rootFoler, path) }),
+    );
   }
 
   public async emptyS3Directory(bucket, dir) {
@@ -405,7 +307,10 @@ export class FirmwareService implements OnApplicationBootstrap {
         message: 'Uploading Firmware to Bucket',
       });
 
-      const files = this.getFiles(firmware.buildConfig.board.type, rootFoler);
+      const files = this.getPartitions(
+        firmware.buildConfig.board.type,
+        rootFoler,
+      );
 
       await Promise.all(
         files.map(async ({ path }, index) =>
