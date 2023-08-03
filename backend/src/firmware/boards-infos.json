@@ -1,0 +1,101 @@
+{
+    "BOARD_SLIMEVR": {
+        "partitions": [
+            {
+                "path": ".pio/build/BOARD_SLIMEVR/firmware.bin",
+                "offset": 0
+            }
+        ],
+        "board": "esp12e"
+    },
+    "BOARD_SLIMEVR_DEV": {
+        "partitions": [
+            {
+                "path": ".pio/build/BOARD_SLIMEVR_DEV/firmware.bin",
+                "offset": 0
+            }
+        ],
+        "board": "esp12e"
+    },
+    "BOARD_NODEMCU": {
+        "partitions": [
+            {
+                "path": ".pio/build/BOARD_NODEMCU/firmware.bin",
+                "offset": 0
+            }
+        ],
+        "board": "esp12e"
+    },
+    "BOARD_WEMOSD1MINI": {
+        "partitions": [
+            {
+                "path": ".pio/build/BOARD_WEMOSD1MINI/firmware.bin",
+                "offset": 0
+            }
+        ],
+        "board": "esp12e"
+    },
+    "BOARD_TTGO_TBASE": {
+        "partitions": [
+            {
+                "path": "/root/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/bin/bootloader_dio_40m.bin",
+                "offset": 4096
+            },
+            {
+                "path": ".pio/build/BOARD_TTGO_TBASE/partitions.bin",
+                "offset": 32768
+            },
+            {
+                "path": "/root/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin",
+                "offset": 57344
+            },
+            {
+                "path": ".pio/build/BOARD_TTGO_TBASE/firmware.bin",
+                "offset": 65536
+            }
+        ],
+        "board": "esp12e"
+    },
+    "BOARD_WROOM32": {
+        "partitions": [
+            {
+                "path": "/root/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/bin/bootloader_dio_40m.bin",
+                "offset": 4096
+            },
+            {
+                "path": ".pio/build/BOARD_WROOM32/partitions.bin",
+                "offset": 32768
+            },
+            {
+                "path": "/root/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin",
+                "offset": 57344
+            },
+            {
+                "path": ".pio/build/BOARD_WROOM32/firmware.bin",
+                "offset": 65536
+            }
+        ],
+        "board": "esp32dev"
+    },
+    "BOARD_ESP01": {
+        "partitions": [
+            {
+                "path": "/root/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/bin/bootloader_dio_40m.bin",
+                "offset": 4096
+            },
+            {
+                "path": ".pio/build/BOARD_ESP01/partitions.bin",
+                "offset": 32768
+            },
+            {
+                "path": "/root/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin",
+                "offset": 57344
+            },
+            {
+                "path": ".pio/build/BOARD_ESP01/firmware.bin",
+                "offset": 65536
+            }
+        ],
+        "board": "esp32dev"
+    }
+}

@@ -1,7 +1,7 @@
-import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { S3ClientConfig } from '@aws-sdk/client-s3';
 import * as dotenv from 'dotenv';
-import { S3ModuleOptions } from 'nestjs-s3';
-import { decode, encode } from 'universal-base64url';
+import { readFile } from 'fs/promises';
+import { encode } from 'universal-base64url';
 
 dotenv.config();
 
@@ -49,39 +49,15 @@ export class ConfigService {
     }
   }
 
-  public getTypeOrmConfig(): TypeOrmModuleOptions {
+  public async getS3Config(): Promise<S3ClientConfig> {
     return {
-      type: 'postgres',
-
-      host: this.getValue('POSTGRES_HOST'),
-      port: +this.getValue('POSTGRES_PORT'),
-      username: this.getValue('POSTGRES_USER'),
-      password: this.getValue('POSTGRES_PASSWORD'),
-      database: this.getValue('POSTGRES_DATABASE'),
-      synchronize: this.appEnv() !== EnvType.PROD,
-      migrationsTableName: 'migration',
-      cache: {
-        duration: 30000,
+      region: 'us-east-1',
+      endpoint: this.getS3Endpoint(),
+      credentials: {
+        accessKeyId: (await readFile('/run/secrets/access_key')).toString(),
+        secretAccessKey: (await readFile('/run/secrets/secret_key')).toString(),
       },
-
-      entities: ['dist/**/*.entity.js'],
-      migrations: ['dist/migrations/*.js'],
-      cli: {
-        migrationsDir: 'dist/migrations',
-      },
-      logging: this.appEnv() == EnvType.PROD ? false : 'all',
-    };
-  }
-
-  public getS3Config(): S3ModuleOptions {
-    return {
-      config: {
-        accessKeyId: this.getValue('S3_ACCESS_KEY'),
-        secretAccessKey: this.getValue('S3_SECRET_KEY'),
-        endpoint: this.getS3Endpoint(),
-        s3ForcePathStyle: true,
-        signatureVersion: 'v4',
-      },
+      forcePathStyle: true,
     };
   }
 
@@ -95,6 +71,10 @@ export class ConfigService {
 
   public getGitHubAuth() {
     return encode(this.getValue('GITHUB_AUTH', true));
+  }
+
+  public getHostUrl() {
+    return encode(this.getValue('HOST_URL', true));
   }
 }
 
@@ -110,6 +90,7 @@ const configService = new ConfigService(process.env).ensureValues([
   'S3_ENDPOINT',
   'S3_BUILDS_BUCKET',
   'GITHUB_AUTH',
+  'HOST_URL',
 ]);
 
 const APP_CONFIG = 'APP_CONFIG';

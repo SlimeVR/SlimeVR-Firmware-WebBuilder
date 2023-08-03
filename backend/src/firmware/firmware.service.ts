@@ -8,25 +8,33 @@ import { VersionNotFoundExeption } from './errors/version-not-found.error';
 import os from 'os';
 import fs from 'fs';
 import { mkdtemp, readdir, readFile, rm, writeFile } from 'fs/promises';
-import path from 'path';
+import path, { join } from 'path';
 import AdmZip from 'adm-zip';
 import fetch from 'node-fetch';
 import { BoardType } from './dto/firmware-board.dto';
 import { exec } from 'child_process';
-import { getConnection, Not } from 'typeorm';
-import { InjectS3 } from 'nestjs-s3';
-import { S3 } from 'aws-sdk';
+import { Not } from 'typeorm';
 import { APP_CONFIG, ConfigService } from 'src/config/config.service';
 import { debounceTime, filter, map, Subject } from 'rxjs';
 import { BuildStatusMessage } from './dto/build-status-message.dto';
-import { AVAILABLE_FIRMWARE_REPOS } from './firmware.constants';
+import {
+  AVAILABLE_FIRMWARE_REPOS,
+  AVAILABLE_BOARDS,
+} from './firmware.constants';
+import {
+  DeleteObjectsCommand,
+  ListObjectsV2Command,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
+import { InjectAws } from 'aws-sdk-v3-nest';
 
 @Injectable()
 export class FirmwareService implements OnApplicationBootstrap {
   private readonly buildStatusSubject = new Subject<BuildStatusMessage>();
 
   constructor(
-    @InjectS3() private s3: S3,
+    @InjectAws(S3Client) private readonly s3: S3Client,
     private githubService: GithubService,
     @Inject(APP_CONFIG) private appConfig: ConfigService,
   ) {}
@@ -48,8 +56,7 @@ export class FirmwareService implements OnApplicationBootstrap {
   }
 
   public async onApplicationBootstrap() {
-    await getConnection()
-      .createQueryBuilder()
+    await Firmware.createQueryBuilder()
       .update(Firmware)
       .set({
         buildStatus: BuildStatus.FAILED,
@@ -109,125 +116,25 @@ export class FirmwareService implements OnApplicationBootstrap {
   }
 
   public getBoard(boardType: BoardType): string {
-    const types = {
-      [BoardType.BOARD_SLIMEVR]: 'esp12e',
-      [BoardType.BOARD_SLIMEVR_DEV]: 'esp12e',
-      [BoardType.BOARD_NODEMCU]: 'esp12e',
-      [BoardType.BOARD_WEMOSD1MINI]: 'esp12e',
-      [BoardType.BOARD_TTGO_TBASE]: 'esp12e',
-      [BoardType.BOARD_WROOM32]: 'esp32dev',
-      [BoardType.BOARD_ESP01]: 'esp32dev',
-    };
-    return types[boardType];
+    return AVAILABLE_BOARDS[boardType].board;
   }
 
-  private getFiles(
+  private getPartitions(
     boardType: BoardType,
     rootFoler: string,
   ): { path: string; offset: number }[] {
-    const types = {
-      [BoardType.BOARD_SLIMEVR]: [
-        {
-          path: path.join(rootFoler, `.pio/build/BOARD_SLIMEVR/firmware.bin`),
-          offset: 0,
-        },
-      ],
-      [BoardType.BOARD_SLIMEVR_DEV]: [
-        {
-          path: path.join(
-            rootFoler,
-            `.pio/build/BOARD_SLIMEVR_DEV/firmware.bin`,
-          ),
-          offset: 0,
-        },
-      ],
-      [BoardType.BOARD_NODEMCU]: [
-        {
-          path: path.join(rootFoler, `.pio/build/BOARD_NODEMCU/firmware.bin`),
-          offset: 0,
-        },
-      ],
-      [BoardType.BOARD_WEMOSD1MINI]: [
-        {
-          path: path.join(
-            rootFoler,
-            `.pio/build/BOARD_WEMOSD1MINI/firmware.bin`,
-          ),
-          offset: 0,
-        },
-      ],
-      [BoardType.BOARD_TTGO_TBASE]: [
-        {
-          path: '/root/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/bin/bootloader_dio_40m.bin',
-          offset: 0x1000,
-        },
-        {
-          path: path.join(
-            rootFoler,
-            `.pio/build/BOARD_TTGO_TBASE/partitions.bin`,
-          ),
-          offset: 0x8000,
-        },
-        {
-          path: '/root/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin',
-          offset: 0xe000,
-        },
-        {
-          path: path.join(
-            rootFoler,
-            `.pio/build/BOARD_TTGO_TBASE/firmware.bin`,
-          ),
-          offset: 0x10000,
-        },
-      ],
-      [BoardType.BOARD_WROOM32]: [
-        {
-          path: '/root/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/bin/bootloader_dio_40m.bin',
-          offset: 0x1000,
-        },
-        {
-          path: path.join(rootFoler, `.pio/build/BOARD_WROOM32/partitions.bin`),
-          offset: 0x8000,
-        },
-        {
-          path: '/root/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin',
-          offset: 0xe000,
-        },
-        {
-          path: path.join(rootFoler, `.pio/build/BOARD_WROOM32/firmware.bin`),
-          offset: 0x10000,
-        },
-      ],
-      [BoardType.BOARD_ESP01]: [
-        {
-          path: '/root/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/bin/bootloader_dio_40m.bin',
-          offset: 0x1000,
-        },
-        {
-          path: path.join(rootFoler, `.pio/build/BOARD_ESP01/partitions.bin`),
-          offset: 0x8000,
-        },
-        {
-          path: '/root/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin',
-          offset: 0xe000,
-        },
-        {
-          path: path.join(rootFoler, `.pio/build/BOARD_ESP01/firmware.bin`),
-          offset: 0x10000,
-        },
-      ],
-    };
-
-    return types[boardType];
+    return AVAILABLE_BOARDS[boardType].partitions.map(
+      ({ path, ...fields }) => ({ ...fields, path: join(rootFoler, path) }),
+    );
   }
 
   public async emptyS3Directory(bucket, dir) {
-    const listParams = {
+    const listObjectsV2 = new ListObjectsV2Command({
       Bucket: bucket,
       Prefix: dir,
-    };
+    });
 
-    const listedObjects = await this.s3.listObjectsV2(listParams).promise();
+    const listedObjects = await this.s3.send(listObjectsV2);
 
     if (listedObjects.Contents.length === 0) return;
 
@@ -240,19 +147,18 @@ export class FirmwareService implements OnApplicationBootstrap {
       deleteParams.Delete.Objects.push({ Key });
     });
 
-    await this.s3.deleteObjects(deleteParams).promise();
+    await this.s3.send(new DeleteObjectsCommand(deleteParams));
 
     if (listedObjects.IsTruncated) await this.emptyS3Directory(bucket, dir);
   }
 
   uploadFirmware(id: string, name: string, buffer: Buffer) {
-    return this.s3
-      .upload({
-        Bucket: this.appConfig.getBuildsBucket(),
-        Key: path.join(id, name),
-        Body: buffer,
-      })
-      .promise();
+    const upload = new PutObjectCommand({
+      Bucket: this.appConfig.getBuildsBucket(),
+      Key: path.join(id, name),
+      Body: buffer,
+    });
+    return this.s3.send(upload);
   }
 
   public getFirmwareLink(id: string) {
@@ -405,7 +311,10 @@ export class FirmwareService implements OnApplicationBootstrap {
         message: 'Uploading Firmware to Bucket',
       });
 
-      const files = this.getFiles(firmware.buildConfig.board.type, rootFoler);
+      const files = this.getPartitions(
+        firmware.buildConfig.board.type,
+        rootFoler,
+      );
 
       await Promise.all(
         files.map(async ({ path }, index) =>
@@ -458,7 +367,7 @@ export class FirmwareService implements OnApplicationBootstrap {
 
   public async buildFirmware(dto: BuildFirmwareDTO): Promise<BuildResponse> {
     try {
-      const [_, owner, version] = dto.version.match(/(.*?)\/(.*)/) || [
+      const [, owner, version] = dto.version.match(/(.*?)\/(.*)/) || [
         undefined,
         'SlimeVR',
         dto.version,

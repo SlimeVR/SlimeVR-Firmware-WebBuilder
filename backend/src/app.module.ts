@@ -1,12 +1,18 @@
-import { CacheModule, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { configService } from './config/config.service';
 import { FirmwareModule } from './firmware/firmware.module';
+import { connectionSource } from './config/typeorm.datasource';
+import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
   imports: [
     CacheModule.register(),
-    TypeOrmModule.forRoot(configService.getTypeOrmConfig()),
+    TypeOrmModule.forRootAsync({
+      useFactory: () => ({}),
+      dataSourceFactory: async () => {
+        return connectionSource.initialize();
+      },
+    }),
     FirmwareModule,
   ],
   controllers: [],

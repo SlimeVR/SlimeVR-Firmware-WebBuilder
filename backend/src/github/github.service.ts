@@ -1,9 +1,10 @@
-import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 import { FetchService } from 'src/commons/http/fetch.service';
 import { AVAILABLE_FIRMWARE_REPOS } from 'src/firmware/firmware.constants';
 import { ReleaseDTO } from './dto/release.dto';
 import { GithubRepositoryDTO } from './dto/repository.dto';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 @Injectable()
 export class GithubService {
@@ -25,7 +26,7 @@ export class GithubService {
         );
         return data;
       },
-      { ttl: 5 * 60 },
+      5 * 60 * 1000,
     );
   }
 
@@ -55,7 +56,7 @@ export class GithubService {
           url: `https://github.com/${owner}/${repo}/archive/refs/heads/${branch}.zip`,
         };
       },
-      { ttl: 5 * 60 },
+      5 * 60 * 1000,
     );
   }
 
@@ -88,7 +89,7 @@ export class GithubService {
             ),
         ];
       },
-      { ttl: 5 * 60 },
+      5 * 60 * 1000,
     );
   }
 
@@ -166,9 +167,9 @@ export class GithubService {
           draft,
           name: `${owner}/${name}`,
           zipball_url,
-        }; //TODO: complete this
+        };
       },
-      { ttl: 5 * 60 },
+      5 * 60 * 1000,
     );
   }
 }
