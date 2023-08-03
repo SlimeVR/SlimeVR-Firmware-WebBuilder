@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: 123456
       POSTGRES_DB: slimevr
     ports:
-      - 127.0.0.1:5432:5432
+      - 5432:5432
     volumes:
       - database-volume:/var/lib/postgresql/data
     networks:
@@ -30,7 +30,6 @@ services:
       - ./test:/app/test
     networks:
       - slimevr-network
-      - caddy-network
     secrets:
       - access_key
       - secret_key
@@ -45,6 +44,7 @@ services:
       S3_ENDPOINT: ${S3_ENDPOINT}
       S3_BUILDS_BUCKET: ${S3_BUILDS_BUCKET}
       GITHUB_AUTH: ${GITHUB_AUTH}
+      HOST_URL: ${HOST_URL}
   slimevr-api-s3:
     image: minio/minio:latest
     ports:
@@ -59,7 +59,6 @@ services:
     restart: always
     networks:
       - slimevr-network
-      - caddy-network
   slimevr-api-s3-init:
     image: minio/mc:latest
     depends_on:
@@ -91,5 +90,3 @@ secrets:
 
 networks:
   slimevr-network:
-  caddy-network:
-    external: true
