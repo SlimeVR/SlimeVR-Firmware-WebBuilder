@@ -74,7 +74,7 @@ export class ConfigService {
   }
 
   public getHostUrl() {
-    return encode(this.getValue('HOST_URL', true));
+    return this.getValue('HOST_URL', true);
   }
 }
 
