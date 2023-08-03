@@ -3,7 +3,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useFirmwareControllerGetBatteriesTypes } from "../../generated-types";
 import { Controller } from "react-hook-form";
 
-export function BatteryConfig({ control, errors }: { control: any, errors: any }) {
+export function BatteryConfig({ control, errors, batteryType }: { batteryType: string, control: any, errors: any }) {
     const { data: batteries, loading: batteriesLoading } = useFirmwareControllerGetBatteriesTypes({});
 
     return (
@@ -44,30 +44,58 @@ export function BatteryConfig({ control, errors }: { control: any, errors: any }
                             />
                         </FormControl>
                     </Grid>
-                    <Grid item xs={12} sm={12}>
-                        <FormControl fullWidth>
-                            <Controller
-                                name={"battery.resistance"}
-                                control={control}
-                                rules={{ required: true, min: 0 }}
-                                render={({ field: { onChange, value },  }) => (
-                                    <TextField error={!!errors.battery?.resistance} onChange={onChange} value={value || ''}  label={"Battery shield resistance (kOhm)"} />
-                                )}
-                            />
-                        </FormControl>
-                    </Grid>
-                    <Grid item xs={12} sm={12}>
-                    <FormControl fullWidth>
-                        <Controller
-                            name={"battery.pin"}
-                            control={control}
-                            rules={{ required: true }}
-                            render={({ field: { onChange, value },  }) => (
-                                <TextField error={!!errors.battery?.pin} onChange={onChange} value={value || ''}  label={"Battery sense PIN"} />
-                            )}
-                        />
-                    </FormControl>
-                    </Grid>
+                    {batteryType === "BAT_EXTERNAL" &&
+                    <>
+                        <Grid item xs={12} sm={12}>
+                            <FormControl fullWidth>
+                                <Controller
+                                    name={"battery.resistance"}
+                                    control={control}
+                                    rules={{ required: true, min: 0 }}
+                                    render={({ field: { onChange, value },  }) => (
+                                        <TextField error={!!errors.battery?.resistance} onChange={onChange} value={value || ''}  label={"Battery shield resistance (kOhm)"} />
+                                    )}
+                                />
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} sm={12}>
+                            <FormControl fullWidth>
+                                <Controller
+                                    name={"battery.shieldR1"}
+                                    control={control}
+                                    rules={{ required: true, min: 0 }}
+                                    render={({ field: { onChange, value },  }) => (
+                                        <TextField error={!!errors.battery?.shieldR1} onChange={onChange} value={value || ''}  label={"Battery shield resistance R1"} />
+                                    )}
+                                />
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} sm={12}>
+                            <FormControl fullWidth>
+                                <Controller
+                                    name={"battery.shieldR2"}
+                                    control={control}
+                                    rules={{ required: true, min: 0 }}
+                                    render={({ field: { onChange, value },  }) => (
+                                        <TextField error={!!errors.battery?.shieldR1} onChange={onChange} value={value || ''}  label={"Battery shield resistance R2"} />
+                                    )}
+                                />
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} sm={12}>
+                            <FormControl fullWidth>
+                                <Controller
+                                    name={"battery.pin"}
+                                    control={control}
+                                    rules={{ required: true }}
+                                    render={({ field: { onChange, value },  }) => (
+                                        <TextField error={!!errors.battery?.pin} onChange={onChange} value={value || ''}  label={"Battery sense PIN"} />
+                                    )}
+                                />
+                            </FormControl>
+                        </Grid>
+                    </>
+                    }
                 </Grid>
             </AccordionDetails>
         </Accordion>

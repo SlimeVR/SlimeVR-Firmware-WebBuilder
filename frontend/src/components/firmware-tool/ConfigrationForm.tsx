@@ -15,6 +15,7 @@ export function ConfigurationForm({ form, nextStep }: { form: any, nextStep: (id
   
     const version = watch("version");
     const wifi = watch("wifi");
+    const batteryType = watch("battery.type");
     const enableLed = watch("board.enableLed");
 
   
@@ -185,7 +186,7 @@ export function ConfigurationForm({ form, nextStep }: { form: any, nextStep: (id
             </Grid>
           </Grid>
           <Grid item xs={12} sm={12}>
-            <BatteryConfig control={control} errors={errors} ></BatteryConfig>
+            <BatteryConfig batteryType={batteryType} control={control} errors={errors} ></BatteryConfig>
           </Grid>
           <Grid item xs={12} sm={12}>
             <WifiConfig errors={errors} control={control}></WifiConfig>
