@@ -9,7 +9,6 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { BuildFirmwareDTO } from '../dto/build-firmware.dto';
-import { BoardPins, BoardType } from '../dto/firmware-board.dto';
 import { FirmwareFile } from '../dto/firmware-files.dto';
 
 export enum BuildStatus {

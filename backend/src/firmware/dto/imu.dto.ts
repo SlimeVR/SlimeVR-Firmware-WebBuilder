@@ -62,7 +62,7 @@ export class IMUConfigDTO {
   @IsEnum(IMUType)
   public type: IMUType;
 
-  @ApiProperty()
+  @ApiProperty({ default: 0, required: true })
   public rotation: number;
 
   @ApiProperty({ required: false })

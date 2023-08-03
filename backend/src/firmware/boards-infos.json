@@ -6,7 +6,18 @@
                 "offset": 0
             }
         ],
-        "board": "esp12e"
+        "board": "esp12e",
+        "defaults": {
+            "imuSDA": "14",
+            "imuSCL": "12",
+            "imuInts": ["16", "13"],
+            "led": "2",
+            "enableLed": true,
+            "ledInverted": true,
+            "batteryPin": "17",
+            "batteryType": "BAT_EXTERNAL",
+            "batteryResistances": [0, 10, 40.2]
+        }
     },
     "BOARD_SLIMEVR_DEV": {
         "partitions": [
@@ -15,7 +26,18 @@
                 "offset": 0
             }
         ],
-        "board": "esp12e"
+        "board": "esp12e",
+        "defaults": {
+            "imuSDA": "4",
+            "imuSCL": "5",
+            "imuInts": ["10", "13"],
+            "led": "2",
+            "enableLed": true,
+            "ledInverted": true,
+            "batteryPin": "17",
+            "batteryType": "BAT_EXTERNAL",
+            "batteryResistances": [0, 10, 40.2]
+        }
     },
     "BOARD_NODEMCU": {
         "partitions": [
@@ -24,7 +46,18 @@
                 "offset": 0
             }
         ],
-        "board": "esp12e"
+        "board": "esp12e",
+        "defaults": {
+            "imuSDA": "D2",
+            "imuSCL": "D1",
+            "imuInts": ["D5", "D6"],
+            "led": "2",
+            "enableLed": true,
+            "ledInverted": false,
+            "batteryPin": "A0",
+            "batteryType": "BAT_EXTERNAL",
+            "batteryResistances": [180, 100, 220]
+        }
     },
     "BOARD_WEMOSD1MINI": {
         "partitions": [
@@ -33,7 +66,18 @@
                 "offset": 0
             }
         ],
-        "board": "esp12e"
+        "board": "esp12e",
+        "defaults": {
+            "imuSDA": "D2",
+            "imuSCL": "D1",
+            "imuInts": ["D5", "D6"],
+            "led": "2",
+            "enableLed": true,
+            "ledInverted": false,
+            "batteryPin": "A0",
+            "batteryType": "BAT_EXTERNAL",
+            "batteryResistances": [180, 100, 220]
+        }
     },
     "BOARD_TTGO_TBASE": {
         "partitions": [
@@ -54,7 +98,18 @@
                 "offset": 65536
             }
         ],
-        "board": "esp12e"
+        "board": "esp12e",
+        "defaults": {
+            "imuSDA": "4",
+            "imuSCL": "5",
+            "imuInts": ["14", "13"],
+            "led": "2",
+            "enableLed": true,
+            "ledInverted": false,
+            "batteryPin": "A0",
+            "batteryType": "BAT_EXTERNAL",
+            "batteryResistances": [180, 100, 220]
+        }
     },
     "BOARD_WROOM32": {
         "partitions": [
@@ -75,7 +130,18 @@
                 "offset": 65536
             }
         ],
-        "board": "esp32dev"
+        "board": "esp32dev",
+        "defaults": {
+            "imuSDA": "2",
+            "imuSCL": "0",
+            "imuInts": ["23", "25"],
+            "led": "2",
+            "enableLed": true,
+            "ledInverted": false,
+            "batteryPin": "36",
+            "batteryType": "BAT_EXTERNAL",
+            "batteryResistances": [180, 100, 220]
+        }
     },
     "BOARD_ESP01": {
         "partitions": [
@@ -96,6 +162,17 @@
                 "offset": 65536
             }
         ],
-        "board": "esp32dev"
+        "board": "esp32dev",
+        "defaults": {
+            "imuSDA": "2",
+            "imuSCL": "0",
+            "imuInts": ["255", "255"],
+            "led": "255",
+            "enableLed": false,
+            "ledInverted": false,
+            "batteryPin": "A0",
+            "batteryType": "BAT_EXTERNAL",
+            "batteryResistances": [180, 100, 220]
+        }
     }
 }

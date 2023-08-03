@@ -28,6 +28,7 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { InjectAws } from 'aws-sdk-v3-nest';
+import { BatteryType } from './dto/battery.dto';
 
 @Injectable()
 export class FirmwareService implements OnApplicationBootstrap {
@@ -165,6 +166,46 @@ export class FirmwareService implements OnApplicationBootstrap {
     return `${this.appConfig.getS3Endpoint()}/${this.appConfig.getBuildsBucket()}/${id}/firmware.bin`;
   }
 
+  public getDefines(buildConfig: BuildFirmwareDTO) {
+    const rotationToFirmware = function (rotation: number): number {
+      // Reduce the angle to its lowest equivalent form,
+      // negate it to match the firmware rotation direction,
+      // then convert it to radians
+      return (-(rotation % 360) / 180) * Math.PI;
+    };
+
+    return `
+      #define IMU ${buildConfig.imus[0].type}
+      #define SECOND_IMU ${buildConfig.imus[1].type}
+      #define BOARD ${buildConfig.board.type}
+      #define IMU_ROTATION ${rotationToFirmware(buildConfig.imus[0].rotation)}
+      #define SECOND_IMU_ROTATION ${rotationToFirmware(
+        buildConfig.imus[1].rotation,
+      )}
+
+      #define BATTERY_MONITOR ${buildConfig.battery.type}
+      ${
+        buildConfig.battery.type === BatteryType.BAT_EXTERNAL &&
+        `
+      #define PIN_BATTERY_LEVEL ${buildConfig.battery.pin}
+      #define BATTERY_SHIELD_RESISTANCE ${buildConfig.battery.resistance}
+      #define BATTERY_SHIELD_R1 ${buildConfig.battery.shieldR1}
+      #define BATTERY_SHIELD_R2 ${buildConfig.battery.shieldR2}
+      `
+      }
+
+      #define PIN_IMU_SDA ${buildConfig.board.pins.imuSDA}
+      #define PIN_IMU_SCL ${buildConfig.board.pins.imuSCL}
+      #define PIN_IMU_INT ${buildConfig.imus[0].imuINT}
+      #define PIN_IMU_INT_2 ${buildConfig.imus[1].imuINT}
+      #define LED_BUILTIN ${buildConfig.board.pins.led}
+      #define LED_INVERTED ${buildConfig.board.ledInverted}
+      #define LED_PIN ${
+        buildConfig.board.enableLed ? buildConfig.board.pins.led : 255
+      }
+    `;
+  }
+
   private async startBuildingTask(firmware: Firmware, release: ReleaseDTO) {
     let tmpDir;
 
@@ -225,41 +266,8 @@ export class FirmwareService implements OnApplicationBootstrap {
       const [root] = await readdir(releaseFolderPath);
       const rootFoler = path.join(releaseFolderPath, root);
 
-      const rotationToFirmware = function (rotation: number): number {
-        // Reduce the angle to its lowest equivalent form,
-        // negate it to match the firmware rotation direction,
-        // then convert it to radians
-        return (-(rotation % 360) / 180) * Math.PI;
-      };
-
-      const definesContent = `
-        #define IMU ${firmware.buildConfig.imus[0].type}
-        #define SECOND_IMU ${firmware.buildConfig.imus[1].type}
-        #define BOARD ${firmware.buildConfig.board.type}
-        #define IMU_ROTATION ${rotationToFirmware(
-          firmware.buildConfig.imus[0].rotation,
-        )}
-        #define SECOND_IMU_ROTATION ${rotationToFirmware(
-          firmware.buildConfig.imus[1].rotation,
-        )}
-
-        #define BATTERY_MONITOR ${firmware.buildConfig.battery.type}
-        #define BATTERY_SHIELD_RESISTANCE ${
-          firmware.buildConfig.battery.resistance
-        }
-
-        #define PIN_IMU_SDA ${firmware.buildConfig.board.pins.imuSDA}
-        #define PIN_IMU_SCL ${firmware.buildConfig.board.pins.imuSCL}
-        #define PIN_IMU_INT ${firmware.buildConfig.imus[0].imuINT}
-        #define PIN_IMU_INT_2 ${firmware.buildConfig.imus[1].imuINT}
-        #define PIN_BATTERY_LEVEL ${firmware.buildConfig.battery.pin}
-        #define LED_BUILTIN ${firmware.buildConfig.board.pins.led}
-        #define LED_PIN ${
-          firmware.buildConfig.board.enableLed
-            ? firmware.buildConfig.board.pins.led
-            : 255
-        }
-      `;
+      const definesContent = this.getDefines(firmware.buildConfig);
+      console.log(definesContent);
 
       await Promise.all([
         writeFile(path.join(rootFoler, 'src', 'defines.h'), definesContent),

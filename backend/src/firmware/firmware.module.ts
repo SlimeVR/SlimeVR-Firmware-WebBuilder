@@ -10,14 +10,8 @@ import { S3Client } from '@aws-sdk/client-s3';
   imports: [
     GithubModule,
     AwsSdkModule.registerAsync({
-      isGlobal: true,
       clientType: S3Client,
-      useFactory: async () => {
-        const config = await configService.getS3Config();
-        const client = new S3Client(config);
-        console.log(config);
-        return client;
-      },
+      useFactory: async () => new S3Client(await configService.getS3Config()),
     }),
   ],
   controllers: [FirmwareController],

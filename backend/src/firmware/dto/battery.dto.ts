@@ -13,8 +13,14 @@ export class BatteryDTO {
   @IsEnum(BatteryType)
   public type: BatteryType;
 
-  @ApiProperty({ default: 180 })
+  @ApiProperty()
   public resistance: number;
+
+  @ApiProperty()
+  public shieldR1: number;
+
+  @ApiProperty()
+  public shieldR2: number;
 
   @ApiProperty()
   public pin: string;

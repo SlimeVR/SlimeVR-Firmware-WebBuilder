@@ -34,4 +34,8 @@ export class FirmwareBoardDTO {
   @ApiProperty({ required: false, default: true })
   @IsOptional()
   public enableLed?: boolean;
+
+  @ApiProperty({ required: false, default: false })
+  @IsOptional()
+  public ledInverted?: boolean;
 }
