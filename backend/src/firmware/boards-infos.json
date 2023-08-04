@@ -53,7 +53,7 @@
             "imuInts": ["D5", "D6"],
             "led": "2",
             "enableLed": true,
-            "ledInverted": false,
+            "ledInverted": true,
             "batteryPin": "A0",
             "batteryType": "BAT_EXTERNAL",
             "batteryResistances": [180, 100, 220]
@@ -73,7 +73,7 @@
             "imuInts": ["D5", "D6"],
             "led": "2",
             "enableLed": true,
-            "ledInverted": false,
+            "ledInverted": true,
             "batteryPin": "A0",
             "batteryType": "BAT_EXTERNAL",
             "batteryResistances": [180, 100, 220]
@@ -100,8 +100,8 @@
         ],
         "board": "esp12e",
         "defaults": {
-            "imuSDA": "4",
-            "imuSCL": "5",
+            "imuSDA": "5",
+            "imuSCL": "4",
             "imuInts": ["14", "13"],
             "led": "2",
             "enableLed": true,
@@ -132,8 +132,8 @@
         ],
         "board": "esp32dev",
         "defaults": {
-            "imuSDA": "2",
-            "imuSCL": "0",
+            "imuSDA": "21",
+            "imuSCL": "22",
             "imuInts": ["23", "25"],
             "led": "2",
             "enableLed": true,
@@ -170,7 +170,7 @@
             "led": "255",
             "enableLed": false,
             "ledInverted": false,
-            "batteryPin": "A0",
+            "batteryPin": "255",
             "batteryType": "BAT_EXTERNAL",
             "batteryResistances": [180, 100, 220]
         }
