@@ -105,7 +105,7 @@
             "imuInts": ["14", "13"],
             "led": "LED_BUILTIN",
             "enableLed": true,
-            "ledInverted": false,
+            "ledInverted": true,
             "batteryPin": "A0",
             "batteryType": "BAT_EXTERNAL",
             "batteryResistances": [180, 100, 220]
