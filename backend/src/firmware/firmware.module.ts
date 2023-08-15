@@ -6,6 +6,7 @@ import { FirmwareService } from './firmware.service';
 import { AwsSdkModule } from 'aws-sdk-v3-nest';
 import { S3Client } from '@aws-sdk/client-s3';
 import { PrismaModule } from 'src/commons/prisma/prisma.module';
+import { FirmwareBuilderService } from './firmware-builder.service';
 
 @Module({
   imports: [
@@ -17,6 +18,6 @@ import { PrismaModule } from 'src/commons/prisma/prisma.module';
     }),
   ],
   controllers: [FirmwareController],
-  providers: [FirmwareService, configProvider],
+  providers: [FirmwareService, FirmwareBuilderService, configProvider],
 })
-export class FirmwareModule {}
+export class FirmwareModule { }

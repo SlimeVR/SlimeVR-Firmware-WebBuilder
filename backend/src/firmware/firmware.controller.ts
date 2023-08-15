@@ -13,7 +13,6 @@ import {
   ApiBadRequestResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
-  ApiOperation,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -27,12 +26,14 @@ import { BatteryType, BoardType } from '@prisma/client';
 import { CreateBuildFirmwareDTO } from './dto/build-firmware.dto';
 import { AVAILABLE_BOARDS } from './firmware.constants';
 import { DefaultBuildConfigDTO } from './dto/default-config.dto';
+import { FirmwareBuilderService } from './firmware-builder.service';
 
 @ApiTags('firmware')
 @Controller('firmwares')
 export class FirmwareController {
   constructor(
     private firmwareService: FirmwareService,
+    private firmwareBuilderService: FirmwareBuilderService,
   ) { }
 
   /**
@@ -53,7 +54,7 @@ export class FirmwareController {
   @ApiOkResponse({ type: BuildResponseDTO, description: 'Build a specific configuration of the firmware', })
   @ApiBadRequestResponse({ description: VersionNotFoundError })
   async buildFirmware(@Body() body: CreateBuildFirmwareDTO) {
-    return this.firmwareService.buildFirmware(body);
+    return this.firmwareBuilderService.buildFirmware(body);
   }
 
 
@@ -65,7 +66,7 @@ export class FirmwareController {
   @Sse('/build-status/:id')
   @Header('Cache-Control', 'no-cache')
   buildStatus(@Param('id') id: string) {
-    return this.firmwareService.getBuildStatusSubject(id);
+    return this.firmwareBuilderService.getBuildStatusSubject(id);
   }
 
   /**
