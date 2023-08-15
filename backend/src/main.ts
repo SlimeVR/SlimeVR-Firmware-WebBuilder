@@ -12,6 +12,7 @@ async function bootstrap() {
 
   const corsWhitelist = [
     configService.getHostUrl(),
+    'http://localhost:5173',
     'http://localhost:3000',
     'http://localhost:3001',
   ];
@@ -33,6 +34,7 @@ async function bootstrap() {
     .setDescription('Slimy things')
     .setVersion('1.0')
     .addTag('slimevr')
+    .addServer(configService.getHostUrl(), 'main server')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document, {

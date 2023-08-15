@@ -23,8 +23,8 @@ export class FetchService {
     });
 
     const data = response.headers
-      .get('Content-Type')
-      .includes('application/json')
+      ?.get('Content-Type')
+      ?.includes('application/json')
       ? ((await response.json()) as T)
       : ((await response.text()) as any);
 

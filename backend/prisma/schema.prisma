@@ -1,0 +1,89 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum BuildStatus {
+  BUILDING
+  DONE
+  FAILED
+}
+
+enum BoardType {
+  BOARD_SLIMEVR
+  BOARD_SLIMEVR_DEV
+  BOARD_NODEMCU
+  BOARD_WROOM32
+  BOARD_WEMOSD1MINI
+  BOARD_TTGO_TBASE
+  BOARD_ESP01
+}
+
+enum BatteryType {
+  BAT_EXTERNAL
+  BAT_INTERNAL
+  BAT_MCP3021
+  BAT_INTERNAL_MCP3021
+}
+
+enum ImuType {
+  IMU_MPU9250
+  IMU_MPU6500
+  IMU_BNO080
+  IMU_BNO085
+  IMU_BNO055
+  IMU_BNO086
+  IMU_MPU6050
+  IMU_BMI160
+  IMU_ICM20948
+  IMU_BMI270
+}
+
+model BoardConfig {
+  id String @id @unique @default(uuid())
+  type BoardType
+  ledPin String
+  enableLed Boolean
+  ledInverted Boolean
+  batteryPin String
+  batteryType BatteryType
+  batteryResistances Int[]
+  firmware Firmware @relation(fields: [firmwareId], references: [id], onDelete: Cascade)
+  firmwareId String @unique
+}
+
+model ImuConfig {
+  id String @id @unique @default(uuid())
+  type ImuType
+  rotation Float
+  intPin String
+  sclPin String
+  sdaPin String
+  firmware Firmware @relation(fields: [firmwareId], references: [id], onDelete: Cascade)
+  firmwareId String @unique
+}
+
+model FirmwareFile {
+  url String
+  offset Int
+  firmware Firmware @relation(fields: [firmwareId], references: [id], onDelete: Cascade)
+  firmwareId String @unique
+}
+
+model Firmware {
+  id String @id @unique @default(uuid())
+  releaseId String
+  buildStatus BuildStatus
+  buildVersion String
+  boardConfig BoardConfig?
+  imusConfig ImuConfig[]
+  firmwareFiles FirmwareFile[]
+  createdAt DateTime @default(now())
+}

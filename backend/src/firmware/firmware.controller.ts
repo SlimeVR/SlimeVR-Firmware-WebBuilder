@@ -19,17 +19,17 @@ import {
 } from '@nestjs/swagger';
 import { ReleaseDTO } from 'src/github/dto/release.dto';
 import { GithubService } from 'src/github/github.service';
-import { BatteryType } from './dto/battery.dto';
-import { BoardTypeBoard } from './dto/board-type-board.dto';
-import { BuildFirmwareDTO } from './dto/build-firmware.dto';
-import { BuildResponse } from './dto/build-response.dto';
-import { BoardType, FirmwareBoardDTO } from './dto/firmware-board.dto';
-import { IMUConfigDTO, IMUDTO, IMUS, IMUType } from './dto/imu.dto';
-import { Firmware } from './entity/firmware.entity';
+import { BuildResponseDTO } from './dto/build-response.dto';
+import { IMUDTO, IMUS } from './dto/imu.dto';
 import { VersionNotFoundError } from './errors/version-not-found.error';
 import { FirmwareService } from './firmware.service';
+import { FirmwareDTO } from './dto/firmware.dto';
+import { BatteryType, BoardType } from '@prisma/client';
+import { CreateBuildFirmwareDTO } from './dto/build-firmware.dto';
+import { AVAILABLE_BOARDS } from './firmware.constants';
+import { DefaultBuildConfigDTO } from './dto/default-config.dto';
 
-@ApiTags('slimevr')
+@ApiTags('firmware')
 @Controller('firmwares')
 export class FirmwareController {
   constructor(
@@ -37,9 +37,12 @@ export class FirmwareController {
     private githubService: GithubService,
   ) {}
 
+  /**
+   * @throws {import("./errors/version-not-found.error").VersionNotFoundExeption}
+   */
   @Get('/')
   @Header('Cache-Control', 'public, max-age=7200')
-  @ApiResponse({ type: [Firmware] })
+  @ApiOkResponse({ type: [FirmwareDTO] })
   getFirmwares() {
     return this.firmwareService.getFirmwares();
   }
@@ -49,9 +52,9 @@ export class FirmwareController {
   @ApiOperation({
     description: 'Build a specific configuration of the firmware',
   })
-  @ApiOkResponse({ type: BuildResponse })
+  @ApiOkResponse({ type: BuildResponseDTO })
   @ApiBadRequestResponse({ description: VersionNotFoundError })
-  async buildAll(@Body() body: BuildFirmwareDTO) {
+  async buildFirmware(@Body() body: CreateBuildFirmwareDTO) {
     return this.firmwareService.buildFirmware(body);
   }
 
@@ -63,12 +66,9 @@ export class FirmwareController {
 
   @Get('/boards')
   @Header('Cache-Control', 'public, max-age=7200')
-  @ApiOkResponse({ type: [BoardTypeBoard] })
-  getBoardsTypes(): BoardTypeBoard[] {
-    return Object.keys(BoardType).map((board) => ({
-      boardType: BoardType[board],
-      board: this.firmwareService.getBoard(BoardType[board]),
-    }));
+  @ApiOkResponse({ type: [String] })
+  getBoardsTypes(): string[] {
+    return Object.keys(BoardType);
   }
 
   @Get('/versions')
@@ -94,23 +94,22 @@ export class FirmwareController {
 
   @Get('/default-config/:board')
   @Header('Cache-Control', 'public, max-age=7200')
-  @ApiOkResponse({ type: BuildFirmwareDTO })
-  getDefaultConfig(@Param('board') board: BoardType): BuildFirmwareDTO {
-    const dto = new BuildFirmwareDTO();
-    dto.board = new FirmwareBoardDTO();
-    dto.board.type = board;
+  @ApiOkResponse({ type: DefaultBuildConfigDTO })
+  getDefaultConfig(@Param('board') board: BoardType): DefaultBuildConfigDTO {
+    const buildConfig = new DefaultBuildConfigDTO();
+    buildConfig.boardConfig = {
+      ...AVAILABLE_BOARDS[board].defaults,
+      batteryType: AVAILABLE_BOARDS[board].defaults.batteryType as BatteryType, // oof
+      type: board,
+    };
+    buildConfig.imuPins = AVAILABLE_BOARDS[board].imuPins;
 
-    const imu = new IMUConfigDTO();
-    imu.type = IMUType.IMU_MPU6050;
-
-    dto.imus = [imu];
-
-    return BuildFirmwareDTO.completeDefaults(dto);
+    return buildConfig;
   }
 
   @Get('/:id')
   @Header('Cache-Control', 'no-cache')
-  @ApiResponse({ type: Firmware })
+  @ApiResponse({ type: FirmwareDTO })
   @ApiNotFoundResponse()
   async getFirmware(@Param('id') id: string) {
     try {

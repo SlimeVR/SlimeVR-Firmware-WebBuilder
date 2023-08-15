@@ -1,9 +1,7 @@
 import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { ReleaseDTO } from 'src/github/dto/release.dto';
 import { GithubService } from 'src/github/github.service';
-import { BuildFirmwareDTO } from './dto/build-firmware.dto';
-import { BuildResponse } from './dto/build-response.dto';
-import { BuildStatus, Firmware } from './entity/firmware.entity';
+import { BuildResponseDTO } from './dto/build-response.dto';
 import { VersionNotFoundExeption } from './errors/version-not-found.error';
 import os from 'os';
 import fs from 'fs';
@@ -11,9 +9,7 @@ import { mkdtemp, readdir, readFile, rm, writeFile } from 'fs/promises';
 import path, { join } from 'path';
 import AdmZip from 'adm-zip';
 import fetch from 'node-fetch';
-import { BoardType } from './dto/firmware-board.dto';
 import { exec } from 'child_process';
-import { Not } from 'typeorm';
 import { APP_CONFIG, ConfigService } from 'src/config/config.service';
 import { debounceTime, filter, map, Subject } from 'rxjs';
 import { BuildStatusMessage } from './dto/build-status-message.dto';
@@ -28,24 +24,151 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { InjectAws } from 'aws-sdk-v3-nest';
-import { BatteryType } from './dto/battery.dto';
+import { PrismaService } from 'src/commons/prisma/prisma.service';
+
+import {
+  BatteryType,
+  BoardType,
+  BuildStatus,
+  Firmware,
+  ImuConfig,
+  Prisma,
+} from '@prisma/client';
+import { CreateBuildFirmwareDTO } from './dto/build-firmware.dto';
+import { BoardConfigDTO } from './dto/board-config.dto';
 
 @Injectable()
 export class FirmwareService implements OnApplicationBootstrap {
   private readonly buildStatusSubject = new Subject<BuildStatusMessage>();
 
   constructor(
+    @Inject(APP_CONFIG) private appConfig: ConfigService,
     @InjectAws(S3Client) private readonly s3: S3Client,
     private githubService: GithubService,
-    @Inject(APP_CONFIG) private appConfig: ConfigService,
+    private prisma: PrismaService,
   ) {}
 
   public getFirmwares(): Promise<Firmware[]> {
-    return Firmware.find({ where: { buildStatus: BuildStatus.DONE } });
+    return this.prisma.firmware.findMany({ where: { buildStatus: 'DONE' } });
   }
 
   public getFirmware(id: string): Promise<Firmware> {
-    return Firmware.findOneOrFail({ where: { id } });
+    return this.prisma.firmware.findFirstOrThrow({
+      where: { id },
+      include: { boardConfig: true, imusConfig: true },
+    });
+  }
+
+  public async buildFirmware(
+    dto: CreateBuildFirmwareDTO,
+  ): Promise<BuildResponseDTO> {
+    try {
+      const [, owner, version] = dto.version.match(/(.*?)\/(.*)/) || [
+        undefined,
+        'SlimeVR',
+        dto.version,
+      ];
+      let repo = 'SlimeVR-Tracker-ESP';
+
+      // TODO: Make the site say what repo to use, please
+      // If there's a matching owner
+      const ownerRepos = AVAILABLE_FIRMWARE_REPOS[owner];
+      if (ownerRepos !== undefined) {
+        for (const [repoToSearch, branches] of Object.entries(ownerRepos)) {
+          // And a matching branch
+          if (Array.isArray(branches) && branches.includes(version)) {
+            // This is the target repo *probably*
+            repo = repoToSearch;
+            break;
+          }
+        }
+      }
+
+      const release = await this.githubService.getRelease(owner, repo, version);
+
+      const firmware = await this.prisma.firmware.findFirst({
+        where: { releaseId: release.id, buildStatus: { not: 'FAILED' } }, // TODO missing build config
+        include: { firmwareFiles: true },
+      });
+
+      // If we found a firmware that match the config, we just return it without building again
+      if (firmware) {
+        if (firmware.buildStatus === BuildStatus.BUILDING) {
+          return new BuildResponseDTO(firmware.id, firmware.buildStatus);
+        }
+
+        if (firmware.buildStatus === BuildStatus.DONE) {
+          return new BuildResponseDTO(
+            firmware.id,
+            firmware.buildStatus,
+            firmware.firmwareFiles,
+          );
+        }
+
+        // We probably should to better error messages here
+        throw VersionNotFoundExeption;
+      } else {
+        const newFirmware = await this.prisma.firmware.create({
+          data: {
+            buildStatus: BuildStatus.BUILDING,
+            releaseId: release.id,
+            boardConfig: {
+              create: dto.boardConfig,
+            },
+            buildVersion: dto.version,
+            imusConfig: {
+              create: dto.imusConfig,
+            },
+          },
+          include: { imusConfig: true, boardConfig: true },
+        });
+
+        this.startBuildingTask(newFirmware, release);
+        return new BuildResponseDTO(newFirmware.id, newFirmware.buildStatus);
+      }
+    } catch (e) {
+      throw VersionNotFoundExeption;
+    }
+  }
+
+  public getDefines(boardConfig: BoardConfigDTO, imusConfig: ImuConfig[]) {
+    const rotationToFirmware = function (rotation: number): number {
+      // Reduce the angle to its lowest equivalent form,
+      // negate it to match the firmware rotation direction,
+      // then convert it to radians
+      return (-(rotation % 360) / 180) * Math.PI;
+    };
+
+    // this is to deal with old firmware versions where two imus where always declared
+    // i just use the values of the first one if i only have one
+    const secondImu = imusConfig.length === 1 ? imusConfig[0] : imusConfig[2];
+
+    return `
+      #define IMU ${imusConfig[0].type}
+      #define SECOND_IMU ${secondImu.type}
+      #define BOARD ${boardConfig.type}
+      #define IMU_ROTATION ${rotationToFirmware(imusConfig[0].rotation)}
+      #define SECOND_IMU_ROTATION ${rotationToFirmware(secondImu.rotation)}
+
+      #define BATTERY_MONITOR ${boardConfig.type}
+      ${
+        boardConfig.batteryType === BatteryType.BAT_EXTERNAL &&
+        `
+      #define PIN_BATTERY_LEVEL ${boardConfig.batteryPin}
+      #define BATTERY_SHIELD_RESISTANCE ${boardConfig.batteryResistances[0]}
+      #define BATTERY_SHIELD_R1 ${boardConfig.batteryResistances[1]}
+      #define BATTERY_SHIELD_R2 ${boardConfig.batteryResistances[2]}
+      `
+      }
+
+      #define PIN_IMU_SDA ${imusConfig[0].sdaPin}
+      #define PIN_IMU_SCL ${imusConfig[0].sclPin}
+      #define PIN_IMU_INT ${imusConfig[0].intPin || 255}
+      #define PIN_IMU_INT_2 ${secondImu.intPin || 255}
+      #define LED_BUILTIN ${boardConfig.ledPin}
+      #define LED_INVERTED ${boardConfig.ledInverted}
+      #define LED_PIN ${boardConfig.enableLed ? boardConfig.ledPin : 255}
+    `;
   }
 
   public getBuildStatusSubject(id: string) {
@@ -57,16 +180,10 @@ export class FirmwareService implements OnApplicationBootstrap {
   }
 
   public async onApplicationBootstrap() {
-    await Firmware.createQueryBuilder()
-      .update(Firmware)
-      .set({
-        buildStatus: BuildStatus.FAILED,
-      })
-      .where('buildStatus = :buildStatus', {
-        buildStatus: BuildStatus.BUILDING,
-      })
-      .execute();
-
+    await this.prisma.firmware.updateMany({
+      where: { buildStatus: 'BUILDING' },
+      data: { buildStatus: 'FAILED' },
+    });
     this.cleanAllOldReleases();
     setInterval(() => {
       this.cleanAllOldReleases();
@@ -96,18 +213,17 @@ export class FirmwareService implements OnApplicationBootstrap {
 
     if (!branchRelease) return;
 
-    const firmwares = await Firmware.find({
+    const oldFirmwares = await this.prisma.firmware.findMany({
       where: {
-        releaseID: Not(branchRelease.id),
+        releaseId: { not: branchRelease.id },
+        buildVersion: branchRelease.name,
       },
     });
 
-    const oldFirmwares = firmwares.filter(
-      ({ buildConfig: { version } }) => version === branchRelease.name,
-    );
-
     oldFirmwares.forEach(async (firmware) => {
-      await Firmware.delete({ id: firmware.id });
+      await this.prisma.firmware.delete({
+        where: { id: firmware.id },
+      });
       await this.emptyS3Directory(
         this.appConfig.getBuildsBucket(),
         `${firmware.id}`,
@@ -116,97 +232,17 @@ export class FirmwareService implements OnApplicationBootstrap {
     });
   }
 
-  public getBoard(boardType: BoardType): string {
-    return AVAILABLE_BOARDS[boardType].board;
-  }
+  private async startBuildingTask(
+    firmware: Readonly<
+      Prisma.FirmwareGetPayload<{
+        include: { boardConfig: true; imusConfig: true };
+      }>
+    >,
+    release: ReleaseDTO,
+  ) {
+    if (!firmware.boardConfig)
+      throw new Error('invalid state, the firmware entry has no board config');
 
-  private getPartitions(
-    boardType: BoardType,
-    rootFoler: string,
-  ): { path: string; offset: number }[] {
-    return AVAILABLE_BOARDS[boardType].partitions.map(
-      ({ path, ...fields }) => ({ ...fields, path: join(rootFoler, path) }),
-    );
-  }
-
-  public async emptyS3Directory(bucket, dir) {
-    const listObjectsV2 = new ListObjectsV2Command({
-      Bucket: bucket,
-      Prefix: dir,
-    });
-
-    const listedObjects = await this.s3.send(listObjectsV2);
-
-    if (listedObjects.Contents.length === 0) return;
-
-    const deleteParams = {
-      Bucket: bucket,
-      Delete: { Objects: [] },
-    };
-
-    listedObjects.Contents.forEach(({ Key }) => {
-      deleteParams.Delete.Objects.push({ Key });
-    });
-
-    await this.s3.send(new DeleteObjectsCommand(deleteParams));
-
-    if (listedObjects.IsTruncated) await this.emptyS3Directory(bucket, dir);
-  }
-
-  uploadFirmware(id: string, name: string, buffer: Buffer) {
-    const upload = new PutObjectCommand({
-      Bucket: this.appConfig.getBuildsBucket(),
-      Key: path.join(id, name),
-      Body: buffer,
-    });
-    return this.s3.send(upload);
-  }
-
-  public getFirmwareLink(id: string) {
-    return `${this.appConfig.getS3Endpoint()}/${this.appConfig.getBuildsBucket()}/${id}/firmware.bin`;
-  }
-
-  public getDefines(buildConfig: BuildFirmwareDTO) {
-    const rotationToFirmware = function (rotation: number): number {
-      // Reduce the angle to its lowest equivalent form,
-      // negate it to match the firmware rotation direction,
-      // then convert it to radians
-      return (-(rotation % 360) / 180) * Math.PI;
-    };
-
-    return `
-      #define IMU ${buildConfig.imus[0].type}
-      #define SECOND_IMU ${buildConfig.imus[1].type}
-      #define BOARD ${buildConfig.board.type}
-      #define IMU_ROTATION ${rotationToFirmware(buildConfig.imus[0].rotation)}
-      #define SECOND_IMU_ROTATION ${rotationToFirmware(
-        buildConfig.imus[1].rotation,
-      )}
-
-      #define BATTERY_MONITOR ${buildConfig.battery.type}
-      ${
-        buildConfig.battery.type === BatteryType.BAT_EXTERNAL &&
-        `
-      #define PIN_BATTERY_LEVEL ${buildConfig.battery.pin}
-      #define BATTERY_SHIELD_RESISTANCE ${buildConfig.battery.resistance}
-      #define BATTERY_SHIELD_R1 ${buildConfig.battery.shieldR1}
-      #define BATTERY_SHIELD_R2 ${buildConfig.battery.shieldR2}
-      `
-      }
-
-      #define PIN_IMU_SDA ${buildConfig.board.pins.imuSDA}
-      #define PIN_IMU_SCL ${buildConfig.board.pins.imuSCL}
-      #define PIN_IMU_INT ${buildConfig.imus[0].imuINT}
-      #define PIN_IMU_INT_2 ${buildConfig.imus[1].imuINT}
-      #define LED_BUILTIN ${buildConfig.board.pins.led}
-      #define LED_INVERTED ${buildConfig.board.ledInverted}
-      #define LED_PIN ${
-        buildConfig.board.enableLed ? buildConfig.board.pins.led : 255
-      }
-    `;
-  }
-
-  private async startBuildingTask(firmware: Firmware, release: ReleaseDTO) {
     let tmpDir;
 
     try {
@@ -266,9 +302,11 @@ export class FirmwareService implements OnApplicationBootstrap {
       const [root] = await readdir(releaseFolderPath);
       const rootFoler = path.join(releaseFolderPath, root);
 
-      const definesContent = this.getDefines(firmware.buildConfig);
+      const definesContent = this.getDefines(
+        firmware.boardConfig,
+        firmware.imusConfig,
+      );
       console.log(definesContent);
-
       await Promise.all([
         writeFile(path.join(rootFoler, 'src', 'defines.h'), definesContent),
       ]);
@@ -280,8 +318,12 @@ export class FirmwareService implements OnApplicationBootstrap {
       });
 
       await new Promise((resolve, reject) => {
+        if (!firmware.boardConfig) {
+          reject('invalid state, the firmware entry has no board config');
+          return;
+        }
         const platformioRun = exec(
-          `platformio run -e ${firmware.buildConfig.board.type} -c platformio-tools.ini`,
+          `platformio run -e ${firmware.boardConfig.type} -c platformio-tools.ini`,
           {
             cwd: rootFoler,
             env: {
@@ -293,7 +335,12 @@ export class FirmwareService implements OnApplicationBootstrap {
           },
         );
 
-        platformioRun.stdout.on('data', (data) => {
+        platformioRun.stdout?.on('data', (data) => {
+          if (!firmware.boardConfig)
+            throw new Error(
+              'invalid state, the firmware entry has no board config',
+            );
+
           console.log('[BUILD LOG]', `[${firmware.id}]`, data.toString());
           this.buildStatusSubject.next({
             buildStatus: BuildStatus.BUILDING,
@@ -302,7 +349,12 @@ export class FirmwareService implements OnApplicationBootstrap {
           });
         });
 
-        platformioRun.stderr.on('data', (data) => {
+        platformioRun.stderr?.on('data', (data) => {
+          if (!firmware.boardConfig)
+            throw new Error(
+              'invalid state, the firmware entry has no board config',
+            );
+
           console.log('[BUILD LOG]', `[${firmware.id}]`, data.toString());
         });
 
@@ -319,10 +371,7 @@ export class FirmwareService implements OnApplicationBootstrap {
         message: 'Uploading Firmware to Bucket',
       });
 
-      const files = this.getPartitions(
-        firmware.buildConfig.board.type,
-        rootFoler,
-      );
+      const files = this.getPartitions(firmware.boardConfig.type, rootFoler);
 
       await Promise.all(
         files.map(async ({ path }, index) =>
@@ -334,32 +383,44 @@ export class FirmwareService implements OnApplicationBootstrap {
         ),
       );
 
-      firmware.buildStatus = BuildStatus.DONE;
-      firmware.firmwareFiles = files.map(({ offset }, index) => ({
+      const firmwareFiles = files.map(({ offset }, index) => ({
         offset,
         url: `${this.appConfig.getBuildsBucket()}/${
           firmware.id
         }/firmware-part-${index}.bin`,
       }));
-      await Firmware.save(firmware);
+      await this.prisma.firmware.update({
+        where: { id: firmware.id },
+        data: {
+          buildStatus: BuildStatus.DONE,
+          firmwareFiles: {
+            createMany: {
+              data: firmwareFiles,
+            },
+          },
+        },
+      });
 
       this.buildStatusSubject.next({
         buildStatus: BuildStatus.DONE,
         id: firmware.id,
         message: 'Build complete',
-        firmwareFiles: firmware.firmwareFiles,
+        firmwareFiles: firmwareFiles.map((file) => ({
+          ...file,
+          firmwareId: firmware.id,
+        })),
       });
     } catch (e) {
       console.log(e);
-
       this.buildStatusSubject.next({
         buildStatus: BuildStatus.FAILED,
         id: firmware.id,
         message: `Build failed: ${e.message || e}`,
       });
-
-      firmware.buildStatus = BuildStatus.FAILED;
-      await Firmware.save(firmware);
+      await this.prisma.firmware.update({
+        where: { id: firmware.id },
+        data: { buildStatus: BuildStatus.FAILED },
+      });
     } finally {
       try {
         if (tmpDir) {
@@ -373,61 +434,49 @@ export class FirmwareService implements OnApplicationBootstrap {
     }
   }
 
-  public async buildFirmware(dto: BuildFirmwareDTO): Promise<BuildResponse> {
-    try {
-      const [, owner, version] = dto.version.match(/(.*?)\/(.*)/) || [
-        undefined,
-        'SlimeVR',
-        dto.version,
-      ];
-      let repo = 'SlimeVR-Tracker-ESP';
+  public getBoardDefaults(boardType: BoardType) {
+    return AVAILABLE_BOARDS[boardType].defaults;
+  }
 
-      // TODO: Make the site say what repo to use, please
-      // If there's a matching owner
-      const ownerRepos = AVAILABLE_FIRMWARE_REPOS[owner];
-      if (ownerRepos !== undefined) {
-        for (const [repoToSearch, branches] of Object.entries(ownerRepos)) {
-          // And a matching branch
-          if (Array.isArray(branches) && branches.includes(version)) {
-            // This is the target repo *probably*
-            repo = repoToSearch;
-            break;
-          }
-        }
-      }
+  private getPartitions(
+    boardType: BoardType,
+    rootFoler: string,
+  ): { path: string; offset: number }[] {
+    return AVAILABLE_BOARDS[boardType].partitions.map(
+      ({ path, ...fields }) => ({ ...fields, path: join(rootFoler, path) }),
+    );
+  }
 
-      const release = await this.githubService.getRelease(owner, repo, version);
+  public async emptyS3Directory(bucket, dir) {
+    const listObjectsV2 = new ListObjectsV2Command({
+      Bucket: bucket,
+      Prefix: dir,
+    });
 
-      dto = BuildFirmwareDTO.completeDefaults(dto);
+    const listedObjects = await this.s3.send(listObjectsV2);
 
-      let firmware = await Firmware.findOne({
-        where: { buildConfig: dto, releaseID: release.id },
-      });
+    if (!listedObjects.Contents || listedObjects.Contents.length === 0) return;
 
-      if (!firmware) firmware = Firmware.fromDTO(dto);
+    const deleteParams = {
+      Bucket: bucket,
+      Delete: { Objects: listedObjects.Contents.map(({ Key }) => ({ Key })) },
+    };
 
-      if (firmware.id && firmware.buildStatus === BuildStatus.BUILDING) {
-        return new BuildResponse(firmware.id, firmware.buildStatus);
-      }
+    await this.s3.send(new DeleteObjectsCommand(deleteParams));
 
-      if (firmware.id && firmware.buildStatus === BuildStatus.DONE) {
-        return new BuildResponse(
-          firmware.id,
-          firmware.buildStatus,
-          firmware.firmwareFiles,
-        );
-      }
+    if (listedObjects.IsTruncated) await this.emptyS3Directory(bucket, dir);
+  }
 
-      firmware.buildStatus = BuildStatus.BUILDING;
-      firmware.releaseID = release.id;
+  uploadFirmware(id: string, name: string, buffer: Buffer) {
+    const upload = new PutObjectCommand({
+      Bucket: this.appConfig.getBuildsBucket(),
+      Key: path.join(id, name),
+      Body: buffer,
+    });
+    return this.s3.send(upload);
+  }
 
-      firmware = await Firmware.save(firmware);
-
-      this.startBuildingTask(firmware, release as ReleaseDTO);
-
-      return new BuildResponse(firmware.id, firmware.buildStatus);
-    } catch (e) {
-      throw VersionNotFoundExeption;
-    }
+  public getFirmwareLink(id: string) {
+    return `${this.appConfig.getS3Endpoint()}/${this.appConfig.getBuildsBucket()}/${id}/firmware.bin`;
   }
 }

@@ -27,6 +27,7 @@ services:
       - slimevr-api-s3
     volumes:
       - ./src:/app/src
+      - ./prisma:/app/prisma
       - ./test:/app/test
     networks:
       - slimevr-network
