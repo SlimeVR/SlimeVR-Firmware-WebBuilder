@@ -1,7 +1,7 @@
 import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { ReleaseDTO } from 'src/github/dto/release.dto';
 import { GithubService } from 'src/github/github.service';
-import { BuildResponseDTO } from './dto/build-response.dto';
+import { BuildResponseDTO, BuildStatusMessage } from './dto/build-response.dto';
 import { VersionNotFoundExeption } from './errors/version-not-found.error';
 import os from 'os';
 import fs from 'fs';
@@ -12,7 +12,6 @@ import fetch from 'node-fetch';
 import { exec } from 'child_process';
 import { APP_CONFIG, ConfigService } from 'src/config/config.service';
 import { debounceTime, filter, map, Subject } from 'rxjs';
-import { BuildStatusMessage } from './dto/build-status-message.dto';
 import {
   AVAILABLE_FIRMWARE_REPOS,
   AVAILABLE_BOARDS,
@@ -46,7 +45,7 @@ export class FirmwareService implements OnApplicationBootstrap {
     @InjectAws(S3Client) private readonly s3: S3Client,
     private githubService: GithubService,
     private prisma: PrismaService,
-  ) {}
+  ) { }
 
   public getFirmwares(): Promise<Firmware[]> {
     return this.prisma.firmware.findMany({ where: { buildStatus: 'DONE' } });
@@ -56,6 +55,50 @@ export class FirmwareService implements OnApplicationBootstrap {
     return this.prisma.firmware.findFirstOrThrow({
       where: { id },
       include: { boardConfig: true, imusConfig: true },
+    });
+  }
+
+  /**
+   * 
+   * Fetch all the releases of all the firmware repositories
+   * 
+   * @returns ReleaseDTO[] a list of all the releases
+   */
+  async getAllReleases(): Promise<ReleaseDTO[]> {
+    const releases: Promise<ReleaseDTO | ReleaseDTO[]>[] = [];
+
+    for (const [owner, repos] of Object.entries(AVAILABLE_FIRMWARE_REPOS)) {
+      for (const [repo, branches] of Object.entries(repos)) {
+        // Get all repo releases
+        releases.push(
+          this.githubService.getReleases(owner, repo).catch((e) => {
+            throw new Error(`Unable to fetch releases for "${owner}/${repo}"`, {
+              cause: e,
+            });
+          }),
+        );
+
+        // Get each branch as a release version
+        for (const branch of branches) {
+          releases.push(
+            this.githubService.getBranchRelease(owner, repo, branch).catch((e) => {
+              throw new Error(
+                `Unable to fetch branch release for "${owner}/${repo}/${branch}"`,
+                { cause: e },
+              );
+            }),
+          );
+        }
+      }
+    }
+
+    const settled = await Promise.allSettled(releases);
+    return settled.flatMap((it) => {
+      if (it.status === 'fulfilled') {
+        return it.value;
+      }
+      console.warn(`${it.reason.message}: `, it.reason.cause);
+      return []; // Needed for filtering invalid promises
     });
   }
 
@@ -151,9 +194,8 @@ export class FirmwareService implements OnApplicationBootstrap {
       #define SECOND_IMU_ROTATION ${rotationToFirmware(secondImu.rotation)}
 
       #define BATTERY_MONITOR ${boardConfig.type}
-      ${
-        boardConfig.batteryType === BatteryType.BAT_EXTERNAL &&
-        `
+      ${boardConfig.batteryType === BatteryType.BAT_EXTERNAL &&
+      `
       #define PIN_BATTERY_LEVEL ${boardConfig.batteryPin}
       #define BATTERY_SHIELD_RESISTANCE ${boardConfig.batteryResistances[0]}
       #define BATTERY_SHIELD_R1 ${boardConfig.batteryResistances[1]}
@@ -247,7 +289,7 @@ export class FirmwareService implements OnApplicationBootstrap {
 
     try {
       this.buildStatusSubject.next({
-        buildStatus: BuildStatus.BUILDING,
+        status: BuildStatus.BUILDING,
         id: firmware.id,
         message: 'Creating temporary build folder',
       });
@@ -271,7 +313,7 @@ export class FirmwareService implements OnApplicationBootstrap {
       };
 
       this.buildStatusSubject.next({
-        buildStatus: BuildStatus.BUILDING,
+        status: BuildStatus.BUILDING,
         id: firmware.id,
         message: 'Downloading SlimeVR firmware from Github',
       });
@@ -279,7 +321,7 @@ export class FirmwareService implements OnApplicationBootstrap {
       await downloadFile(release.zipball_url, releaseFilePath);
 
       this.buildStatusSubject.next({
-        buildStatus: BuildStatus.BUILDING,
+        status: BuildStatus.BUILDING,
         id: firmware.id,
         message: 'Extracting firmware',
       });
@@ -294,7 +336,7 @@ export class FirmwareService implements OnApplicationBootstrap {
       });
 
       this.buildStatusSubject.next({
-        buildStatus: BuildStatus.BUILDING,
+        status: BuildStatus.BUILDING,
         id: firmware.id,
         message: 'Setting up defines and configs',
       });
@@ -312,7 +354,7 @@ export class FirmwareService implements OnApplicationBootstrap {
       ]);
 
       this.buildStatusSubject.next({
-        buildStatus: BuildStatus.BUILDING,
+        status: BuildStatus.BUILDING,
         id: firmware.id,
         message: 'Building Firmware (this might take a minute)',
       });
@@ -343,7 +385,7 @@ export class FirmwareService implements OnApplicationBootstrap {
 
           console.log('[BUILD LOG]', `[${firmware.id}]`, data.toString());
           this.buildStatusSubject.next({
-            buildStatus: BuildStatus.BUILDING,
+            status: BuildStatus.BUILDING,
             id: firmware.id,
             message: 'Building Firmware (this might take a minute)',
           });
@@ -366,7 +408,7 @@ export class FirmwareService implements OnApplicationBootstrap {
       });
 
       this.buildStatusSubject.next({
-        buildStatus: BuildStatus.BUILDING,
+        status: BuildStatus.BUILDING,
         id: firmware.id,
         message: 'Uploading Firmware to Bucket',
       });
@@ -385,9 +427,8 @@ export class FirmwareService implements OnApplicationBootstrap {
 
       const firmwareFiles = files.map(({ offset }, index) => ({
         offset,
-        url: `${this.appConfig.getBuildsBucket()}/${
-          firmware.id
-        }/firmware-part-${index}.bin`,
+        url: `${this.appConfig.getBuildsBucket()}/${firmware.id
+          }/firmware-part-${index}.bin`,
       }));
       await this.prisma.firmware.update({
         where: { id: firmware.id },
@@ -402,7 +443,7 @@ export class FirmwareService implements OnApplicationBootstrap {
       });
 
       this.buildStatusSubject.next({
-        buildStatus: BuildStatus.DONE,
+        status: BuildStatus.DONE,
         id: firmware.id,
         message: 'Build complete',
         firmwareFiles: firmwareFiles.map((file) => ({
@@ -413,7 +454,7 @@ export class FirmwareService implements OnApplicationBootstrap {
     } catch (e) {
       console.log(e);
       this.buildStatusSubject.next({
-        buildStatus: BuildStatus.FAILED,
+        status: BuildStatus.FAILED,
         id: firmware.id,
         message: `Build failed: ${e.message || e}`,
       });

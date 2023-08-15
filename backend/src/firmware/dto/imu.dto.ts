@@ -2,6 +2,11 @@ import { ApiProperty } from '@nestjs/swagger';
 import { ImuType } from '@prisma/client';
 import { IsEnum } from 'class-validator';
 
+/**
+ * List of the imus types and informations about int pins
+ * this is used as display information, so we can hide
+ * the int pin field if the imu does not have one
+ */
 export const IMUS: IMUDTO[] = [
   {
     type: ImuType.IMU_MPU9250,
@@ -46,10 +51,17 @@ export const IMUS: IMUDTO[] = [
 ];
 
 export class IMUDTO {
-  @ApiProperty({ enum: ImuType })
+  /**
+   * Type of the imu
+   * @see {ImuType}
+   */
+  @ApiProperty({ enum: ImuType, description: 'Type of the imu' })
   @IsEnum(ImuType)
   public type: ImuType;
 
-  @ApiProperty()
+  /**
+   * Does that imu type require a int pin
+   */
+  @ApiProperty({ required: true, description: 'Does that imu type require a int pin' })
   public hasIntPin: boolean;
 }

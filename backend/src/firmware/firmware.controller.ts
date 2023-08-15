@@ -34,12 +34,8 @@ import { DefaultBuildConfigDTO } from './dto/default-config.dto';
 export class FirmwareController {
   constructor(
     private firmwareService: FirmwareService,
-    private githubService: GithubService,
-  ) {}
+  ) { }
 
-  /**
-   * @throws {import("./errors/version-not-found.error").VersionNotFoundExeption}
-   */
   @Get('/')
   @Header('Cache-Control', 'public, max-age=7200')
   @ApiOkResponse({ type: [FirmwareDTO] })
@@ -75,7 +71,7 @@ export class FirmwareController {
   @Header('Cache-Control', 'public, max-age=7200')
   @ApiOkResponse({ type: [ReleaseDTO] })
   async getVersions(): Promise<ReleaseDTO[]> {
-    return this.githubService.getAllReleases();
+    return this.firmwareService.getAllReleases();
   }
 
   @Get('/imus')

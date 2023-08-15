@@ -8,7 +8,7 @@ export type BoardDefault = {
   partitions: { path: string; offset: number }[];
   defaults: Omit<
     DefaultBuildConfigDTO['boardConfig'],
-    'type' | 'batteryType'
+    'type' | 'batteryType' | 'intPin'
   > & { batteryType: string }; // OOF
   imuPins: DefaultBuildConfigDTO['imuPins'];
 };

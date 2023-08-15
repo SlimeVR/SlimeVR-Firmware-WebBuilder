@@ -2,12 +2,21 @@ import { ApiProperty } from '@nestjs/swagger';
 import { FirmwareFile } from '@prisma/client';
 
 export class FirmwareFileDTO implements FirmwareFile {
-  @ApiProperty()
+  /**
+   * Url to the file
+   */
+  @ApiProperty({ required: true, description: 'Url to the file' })
   url: string;
 
-  @ApiProperty()
+  /**
+   * Address of the partition
+   */
+  @ApiProperty({ required: true, description: 'Address of the partition' })
   offset: number;
 
-  @ApiProperty()
+  /**
+   * Id of the linked firmware
+   */
+  @ApiProperty({ required: true, description: 'Id of the linked firmware' })
   firmwareId: string;
 }
