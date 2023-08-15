@@ -34,6 +34,9 @@ export class FirmwareBuilderService {
         private prisma: PrismaService,
     ) { }
 
+    /**
+     * Returns the content of the define.h based on the board config and imus config
+     */
     public getDefines(boardConfig: BoardConfigDTO, imusConfig: ImuConfig[]) {
         const rotationToFirmware = function (rotation: number): number {
             // Reduce the angle to its lowest equivalent form,
@@ -73,6 +76,9 @@ export class FirmwareBuilderService {
         `;
     }
 
+    /**
+     * Build a firmware according to the specified config
+     */
     public async buildFirmware(
         dto: CreateBuildFirmwareDTO,
     ): Promise<BuildResponseDTO> {
@@ -145,6 +151,10 @@ export class FirmwareBuilderService {
         }
     }
 
+    /**
+     * Build the firmware
+     * this function spawns the platformio build process and notify the user about the progress
+     */
     private async startBuildingTask(
         firmware: Readonly<
             Prisma.FirmwareGetPayload<{
@@ -346,7 +356,10 @@ export class FirmwareBuilderService {
         }
     }
 
-    uploadFirmware(id: string, name: string, buffer: Buffer) {
+    /**
+     * Upload the firmware file to a s3 bucket 
+     */
+    private uploadFirmware(id: string, name: string, buffer: Buffer) {
         const upload = new PutObjectCommand({
             Bucket: this.appConfig.getBuildsBucket(),
             Key: path.join(id, name),
@@ -355,6 +368,9 @@ export class FirmwareBuilderService {
         return this.s3.send(upload);
     }
 
+    /**
+     * Get the board partitions infos
+     */
     private getPartitions(
         boardType: BoardType,
         rootFoler: string,
@@ -364,6 +380,9 @@ export class FirmwareBuilderService {
         );
     }
 
+    /**
+     * Subject with the build status, this gives the current status of a build from its id
+     */
     public getBuildStatusSubject(id: string) {
         return this.buildStatusSubject.asObservable().pipe(
             filter((status) => status.id === id),

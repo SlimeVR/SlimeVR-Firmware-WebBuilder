@@ -75,14 +75,7 @@ export class FirmwareController {
   @Get('/boards')
   @Header('Cache-Control', 'public, max-age=7200')
   @ApiOkResponse({
-    schema: {
-      anyOf: Object.keys(BoardType) // I really dont know about this ....
-        .map(() => ({
-          oneOf: Object.keys(BatteryType).map((type) => ({
-            type,
-          })),
-        })),
-    },
+    type: [String],
     description: 'List all the possible board types'
   })
   getBoardsTypes(): string[] {
