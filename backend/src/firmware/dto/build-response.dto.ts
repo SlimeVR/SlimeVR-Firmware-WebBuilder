@@ -16,7 +16,11 @@ export class BuildResponseDTO {
    * Build status of the firmware
    * @see {BuildStatus}
    */
-  @ApiProperty({ enum: BuildStatus, required: true, description: 'Build status of the firmware' })
+  @ApiProperty({
+    enum: BuildStatus,
+    required: true,
+    description: 'Build status of the firmware',
+  })
   @IsEnum(BuildStatus)
   public status: BuildStatus;
 
@@ -40,5 +44,5 @@ export class BuildResponseDTO {
 export class BuildStatusMessage extends BuildResponseDTO {
   @ApiProperty({ required: true })
   @IsString()
-  message: String;
+  message: string;
 }

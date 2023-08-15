@@ -11,42 +11,52 @@ export const IMUS: IMUDTO[] = [
   {
     type: ImuType.IMU_MPU9250,
     hasIntPin: false,
+    imuStartAddress: 0x68,
   },
   {
     type: ImuType.IMU_MPU6500,
     hasIntPin: false,
+    imuStartAddress: 0x68,
   },
   {
     type: ImuType.IMU_BNO080,
     hasIntPin: true,
+    imuStartAddress: 0x4a,
   },
   {
     type: ImuType.IMU_BNO085,
     hasIntPin: true,
+    imuStartAddress: 0x4a,
   },
   {
     type: ImuType.IMU_BNO055,
     hasIntPin: true,
+    imuStartAddress: 0x29,
   },
   {
     type: ImuType.IMU_BNO086,
     hasIntPin: true,
+    imuStartAddress: 0x4a,
   },
   {
     type: ImuType.IMU_MPU6050,
     hasIntPin: false,
+    imuStartAddress: 0x68,
   },
   {
     type: ImuType.IMU_BMI160,
     hasIntPin: false,
+    imuStartAddress: 0x68,
   },
   {
     type: ImuType.IMU_ICM20948,
     hasIntPin: false,
+    imuStartAddress: 0x68,
   },
   {
     type: ImuType.IMU_BMI270,
     hasIntPin: false,
+    imuStartAddress: 0x68,
   },
 ];
 
@@ -62,6 +72,15 @@ export class IMUDTO {
   /**
    * Does that imu type require a int pin
    */
-  @ApiProperty({ required: true, description: 'Does that imu type require a int pin' })
+  @ApiProperty({
+    required: true,
+    description: 'Does that imu type require a int pin',
+  })
   public hasIntPin: boolean;
+
+  /**
+   * First address of the imu
+   */
+  @ApiProperty({ required: true, description: 'First address of the imu' })
+  public imuStartAddress: number;
 }

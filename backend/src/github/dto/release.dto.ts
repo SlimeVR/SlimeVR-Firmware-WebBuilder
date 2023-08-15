@@ -4,7 +4,10 @@ export class ReleaseDTO {
   /**
    * id of the release, usually the commit id
    */
-  @ApiProperty({ required: true, description: 'id of the release, usually the commit id' })
+  @ApiProperty({
+    required: true,
+    description: 'id of the release, usually the commit id',
+  })
   id: string;
 
   /**

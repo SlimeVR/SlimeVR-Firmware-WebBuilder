@@ -34,34 +34,39 @@ export class FirmwareController {
   constructor(
     private firmwareService: FirmwareService,
     private firmwareBuilderService: FirmwareBuilderService,
-  ) { }
+  ) {}
 
   /**
    * List all the built firmwares
    */
   @Get('/')
   @Header('Cache-Control', 'public, max-age=7200')
-  @ApiOkResponse({ type: [FirmwareDTO], description: 'List all the built firmwares' })
+  @ApiOkResponse({
+    type: [FirmwareDTO],
+    description: 'List all the built firmwares',
+  })
   getFirmwares() {
     return this.firmwareService.getFirmwares();
   }
 
   /**
-   * Build a firmware from the requested configuration 
+   * Build a firmware from the requested configuration
    */
   @Post('/build')
   @Header('Cache-Control', 'no-cache')
-  @ApiOkResponse({ type: BuildResponseDTO, description: 'Build a specific configuration of the firmware', })
+  @ApiOkResponse({
+    type: BuildResponseDTO,
+    description: 'Build a specific configuration of the firmware',
+  })
   @ApiBadRequestResponse({ description: VersionNotFoundError })
   async buildFirmware(@Body() body: CreateBuildFirmwareDTO) {
     return this.firmwareBuilderService.buildFirmware(body);
   }
 
-
   /**
    * Get the build status of a firmware
    * This is a SSE (Server Sent Event)
-   * you can use the web browser api to check for the build status and update the ui in real time 
+   * you can use the web browser api to check for the build status and update the ui in real time
    */
   @Sse('/build-status/:id')
   @Header('Cache-Control', 'no-cache')
@@ -76,7 +81,7 @@ export class FirmwareController {
   @Header('Cache-Control', 'public, max-age=7200')
   @ApiOkResponse({
     type: [String],
-    description: 'List all the possible board types'
+    description: 'List all the possible board types',
   })
   getBoardsTypes(): string[] {
     return Object.keys(BoardType);
@@ -87,7 +92,10 @@ export class FirmwareController {
    */
   @Get('/versions')
   @Header('Cache-Control', 'public, max-age=7200')
-  @ApiOkResponse({ type: [ReleaseDTO], description: 'List all the possible versions to build a firmware from' })
+  @ApiOkResponse({
+    type: [ReleaseDTO],
+    description: 'List all the possible versions to build a firmware from',
+  })
   async getVersions(): Promise<ReleaseDTO[]> {
     return this.firmwareService.getAllReleases();
   }
@@ -97,7 +105,10 @@ export class FirmwareController {
    */
   @Get('/imus')
   @Header('Cache-Control', 'public, max-age=7200')
-  @ApiOkResponse({ type: [IMUDTO], description: 'List all the possible imus to use' })
+  @ApiOkResponse({
+    type: [IMUDTO],
+    description: 'List all the possible imus to use',
+  })
   getIMUSTypes(): IMUDTO[] {
     return IMUS;
   }
@@ -117,7 +128,10 @@ export class FirmwareController {
    */
   @Get('/default-config/:board')
   @Header('Cache-Control', 'public, max-age=7200')
-  @ApiOkResponse({ type: DefaultBuildConfigDTO, description: 'Gives the default pins / configuration of a given board' })
+  @ApiOkResponse({
+    type: DefaultBuildConfigDTO,
+    description: 'Gives the default pins / configuration of a given board',
+  })
   getDefaultConfig(@Param('board') board: BoardType): DefaultBuildConfigDTO {
     const buildConfig = new DefaultBuildConfigDTO();
     buildConfig.boardConfig = {
@@ -131,11 +145,14 @@ export class FirmwareController {
   }
 
   /**
-   * Get the inforamtions about a firmware from its id 
+   * Get the inforamtions about a firmware from its id
    */
   @Get('/:id')
   @Header('Cache-Control', 'no-cache')
-  @ApiResponse({ type: FirmwareDTO, description: 'Get the inforamtions about a firmware from its id' })
+  @ApiResponse({
+    type: FirmwareDTO,
+    description: 'Get the inforamtions about a firmware from its id',
+  })
   @ApiNotFoundResponse()
   async getFirmware(@Param('id') id: string) {
     try {

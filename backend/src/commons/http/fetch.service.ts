@@ -11,13 +11,13 @@ export interface FetchResponse<T> {
 
 @Injectable()
 export class FetchService {
-  constructor(@Inject(FETCH_CONFIG) private fetchConfig: FetchModuleConfig) { }
+  constructor(@Inject(FETCH_CONFIG) private fetchConfig: FetchModuleConfig) {}
 
   /**
    * Perform a fetch requests with to a specific path and http headers informations
    * if the response payload is JSON it will parse it and return it as an object directly
-   * 
-   * Warning this is not validating the response payload, you should do it yourself 
+   *
+   * Warning this is not validating the response payload, you should do it yourself
    */
   public async request<T>(
     url: string,

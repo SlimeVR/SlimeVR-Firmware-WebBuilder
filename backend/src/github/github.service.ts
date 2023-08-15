@@ -11,13 +11,13 @@ export class GithubService {
   constructor(
     private fetchSerice: FetchService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
-  ) { }
+  ) {}
 
   /**
    * Get informations about a github repository
-   * 
+   *
    * This function use caching, TTL 5min
-   * 
+   *
    * @param owner owner of the repository
    * @param repo name of the repository
    * @returns GithubRepositoryDTO informations about the requested repository
@@ -40,11 +40,11 @@ export class GithubService {
   }
 
   /**
-   * 
+   *
    * Get the release inforamations of a repository branch
-   * 
+   *
    * This function use caching, TTL 5min
-   * 
+   *
    * @param owner owner of the repository
    * @param repo name of the repository
    * @param branch branch inside the repository
@@ -81,12 +81,12 @@ export class GithubService {
   }
 
   /**
-   * 
+   *
    * Get all the releases of a repository
-   * 
+   *
    * This function use caching, TTL 5min
-   * 
-   * 
+   *
+   *
    * @param owner owner of the repository
    * @param repo name of the repository
    * @returns An array of ReleaseDTO, the list of all the releases inside the repo
@@ -124,14 +124,12 @@ export class GithubService {
     );
   }
 
-
-
   /**
-   * 
+   *
    * Get the release information of a repository from its name
-   * 
+   *
    * This function use caching, TTL 5min
-   * 
+   *
    * @param owner owner of the repository
    * @param repo name of the repository
    * @param version version tag of the release

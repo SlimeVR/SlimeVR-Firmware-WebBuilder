@@ -20,4 +20,4 @@ import { FirmwareBuilderService } from './firmware-builder.service';
   controllers: [FirmwareController],
   providers: [FirmwareService, FirmwareBuilderService, configProvider],
 })
-export class FirmwareModule { }
+export class FirmwareModule {}

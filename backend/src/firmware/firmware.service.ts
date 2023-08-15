@@ -2,9 +2,7 @@ import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { ReleaseDTO } from 'src/github/dto/release.dto';
 import { GithubService } from 'src/github/github.service';
 import { APP_CONFIG, ConfigService } from 'src/config/config.service';
-import {
-  AVAILABLE_FIRMWARE_REPOS,
-} from './firmware.constants';
+import { AVAILABLE_FIRMWARE_REPOS } from './firmware.constants';
 import {
   DeleteObjectsCommand,
   ListObjectsV2Command,
@@ -12,19 +10,16 @@ import {
 } from '@aws-sdk/client-s3';
 import { InjectAws } from 'aws-sdk-v3-nest';
 import { PrismaService } from 'src/commons/prisma/prisma.service';
-import {
-  Firmware,
-} from '@prisma/client';
+import { Firmware } from '@prisma/client';
 
 @Injectable()
 export class FirmwareService implements OnApplicationBootstrap {
-
   constructor(
     @Inject(APP_CONFIG) private appConfig: ConfigService,
     @InjectAws(S3Client) private readonly s3: S3Client,
     private githubService: GithubService,
     private prisma: PrismaService,
-  ) { }
+  ) {}
 
   public getFirmwares(): Promise<Firmware[]> {
     return this.prisma.firmware.findMany({ where: { buildStatus: 'DONE' } });
@@ -38,9 +33,9 @@ export class FirmwareService implements OnApplicationBootstrap {
   }
 
   /**
-   * 
+   *
    * Fetch all the releases of all the firmware repositories
-   * 
+   *
    * @returns ReleaseDTO[] a list of all the releases
    */
   async getAllReleases(): Promise<ReleaseDTO[]> {
@@ -60,12 +55,14 @@ export class FirmwareService implements OnApplicationBootstrap {
         // Get each branch as a release version
         for (const branch of branches) {
           releases.push(
-            this.githubService.getBranchRelease(owner, repo, branch).catch((e) => {
-              throw new Error(
-                `Unable to fetch branch release for "${owner}/${repo}/${branch}"`,
-                { cause: e },
-              );
-            }),
+            this.githubService
+              .getBranchRelease(owner, repo, branch)
+              .catch((e) => {
+                throw new Error(
+                  `Unable to fetch branch release for "${owner}/${repo}/${branch}"`,
+                  { cause: e },
+                );
+              }),
           );
         }
       }
@@ -93,7 +90,7 @@ export class FirmwareService implements OnApplicationBootstrap {
       data: { buildStatus: 'FAILED' },
     });
     this.cleanAllOldReleases();
-    // Check every hour for failed builds and remove them 
+    // Check every hour for failed builds and remove them
     setInterval(() => {
       this.cleanAllOldReleases();
     }, 60 * 60 * 1000).unref();

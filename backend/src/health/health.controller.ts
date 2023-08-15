@@ -4,11 +4,10 @@ import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 @ApiTags('health')
 @Controller('health')
 export class HealthController {
-
   /**
    * Gives the status of the api
    * this endpoint will always return true
-   * 
+   *
    * @returns Boolean, is the api healty or not
    */
   @Get('/')
