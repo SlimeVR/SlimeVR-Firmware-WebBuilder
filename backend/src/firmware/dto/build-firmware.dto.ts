@@ -14,7 +14,7 @@ export class CreateBuildConfigDTO {
    * Imu config, list of all the imus used and their pins
    */
   @ApiProperty({ type: [CreateImuConfigDTO], minItems: 1, description: 'Imu config, list of all the imus used and their pins' })
-  @IsArray({ each: true })
+  @IsArray()
   public imusConfig: CreateImuConfigDTO[];
 }
 
