@@ -19,7 +19,7 @@ export class ConfigService {
     if (typeof value !== 'string' && throwOnMissing) {
       throw new Error(`config error - missing process.env.${key}`);
     }
-    return value;
+    return value as string; // TODO: need fix
   }
 
   public ensureValues(keys: string[]) {
@@ -28,7 +28,7 @@ export class ConfigService {
   }
 
   public getPort(): number {
-    return +this.getValue('PORT', false) || 80;
+    return +(this.getValue('PORT', false) || 80);
   }
 
   public getListenHost() {
@@ -80,11 +80,7 @@ export class ConfigService {
 
 const configService = new ConfigService(process.env).ensureValues([
   'APP_ENV',
-  'POSTGRES_HOST',
-  'POSTGRES_PORT',
-  'POSTGRES_USER',
-  'POSTGRES_PASSWORD',
-  'POSTGRES_DATABASE',
+  'DATABASE_URL',
   'S3_ACCESS_KEY',
   'S3_SECRET_KEY',
   'S3_ENDPOINT',

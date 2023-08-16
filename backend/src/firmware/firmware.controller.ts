@@ -13,104 +13,146 @@ import {
   ApiBadRequestResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
-  ApiOperation,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { ReleaseDTO } from 'src/github/dto/release.dto';
-import { GithubService } from 'src/github/github.service';
-import { BatteryType } from './dto/battery.dto';
-import { BoardTypeBoard } from './dto/board-type-board.dto';
-import { BuildFirmwareDTO } from './dto/build-firmware.dto';
-import { BuildResponse } from './dto/build-response.dto';
-import { BoardType, FirmwareBoardDTO } from './dto/firmware-board.dto';
-import { IMUConfigDTO, IMUDTO, IMUS, IMUType } from './dto/imu.dto';
-import { Firmware } from './entity/firmware.entity';
+import { BuildResponseDTO } from './dto/build-response.dto';
+import { IMUDTO, IMUS } from './dto/imu.dto';
 import { VersionNotFoundError } from './errors/version-not-found.error';
 import { FirmwareService } from './firmware.service';
+import { FirmwareDTO } from './dto/firmware.dto';
+import { BatteryType, BoardType } from '@prisma/client';
+import { CreateBuildFirmwareDTO } from './dto/build-firmware.dto';
+import { AVAILABLE_BOARDS } from './firmware.constants';
+import { DefaultBuildConfigDTO } from './dto/default-config.dto';
+import { FirmwareBuilderService } from './firmware-builder.service';
 
-@ApiTags('slimevr')
+@ApiTags('firmware')
 @Controller('firmwares')
 export class FirmwareController {
   constructor(
     private firmwareService: FirmwareService,
-    private githubService: GithubService,
+    private firmwareBuilderService: FirmwareBuilderService,
   ) {}
 
+  /**
+   * List all the built firmwares
+   */
   @Get('/')
   @Header('Cache-Control', 'public, max-age=7200')
-  @ApiResponse({ type: [Firmware] })
+  @ApiOkResponse({
+    type: [FirmwareDTO],
+    description: 'List all the built firmwares',
+  })
   getFirmwares() {
     return this.firmwareService.getFirmwares();
   }
 
+  /**
+   * Build a firmware from the requested configuration
+   */
   @Post('/build')
   @Header('Cache-Control', 'no-cache')
-  @ApiOperation({
+  @ApiOkResponse({
+    type: BuildResponseDTO,
     description: 'Build a specific configuration of the firmware',
   })
-  @ApiOkResponse({ type: BuildResponse })
   @ApiBadRequestResponse({ description: VersionNotFoundError })
-  async buildAll(@Body() body: BuildFirmwareDTO) {
-    return this.firmwareService.buildFirmware(body);
+  async buildFirmware(@Body() body: CreateBuildFirmwareDTO) {
+    return this.firmwareBuilderService.buildFirmware(body);
   }
 
+  /**
+   * Get the build status of a firmware
+   * This is a SSE (Server Sent Event)
+   * you can use the web browser api to check for the build status and update the ui in real time
+   */
   @Sse('/build-status/:id')
   @Header('Cache-Control', 'no-cache')
   buildStatus(@Param('id') id: string) {
-    return this.firmwareService.getBuildStatusSubject(id);
+    return this.firmwareBuilderService.getBuildStatusSubject(id);
   }
 
+  /**
+   * List all the possible board types
+   */
   @Get('/boards')
   @Header('Cache-Control', 'public, max-age=7200')
-  @ApiOkResponse({ type: [BoardTypeBoard] })
-  getBoardsTypes(): BoardTypeBoard[] {
-    return Object.keys(BoardType).map((board) => ({
-      boardType: BoardType[board],
-      board: this.firmwareService.getBoard(BoardType[board]),
-    }));
+  @ApiOkResponse({
+    type: [String],
+    description: 'List all the possible board types',
+  })
+  getBoardsTypes(): string[] {
+    return Object.keys(BoardType);
   }
 
+  /**
+   * List all the possible versions to build a firmware from
+   */
   @Get('/versions')
   @Header('Cache-Control', 'public, max-age=7200')
-  @ApiOkResponse({ type: [ReleaseDTO] })
+  @ApiOkResponse({
+    type: [ReleaseDTO],
+    description: 'List all the possible versions to build a firmware from',
+  })
   async getVersions(): Promise<ReleaseDTO[]> {
-    return this.githubService.getAllReleases();
+    return this.firmwareService.getAllReleases();
   }
 
+  /**
+   * List all the possible imus to use
+   */
   @Get('/imus')
   @Header('Cache-Control', 'public, max-age=7200')
-  @ApiOkResponse({ type: [IMUDTO] })
+  @ApiOkResponse({
+    type: [IMUDTO],
+    description: 'List all the possible imus to use',
+  })
   getIMUSTypes(): IMUDTO[] {
     return IMUS;
   }
 
+  /**
+   * List all the battery types
+   */
   @Get('/batteries')
   @Header('Cache-Control', 'public, max-age=7200')
-  @ApiOkResponse({ type: [String] })
+  @ApiOkResponse({ type: [String], description: 'List all the battery types' })
   getBatteriesTypes(): string[] {
     return Object.keys(BatteryType);
   }
 
+  /**
+   * Gives the default pins / configuration of a given board
+   */
   @Get('/default-config/:board')
   @Header('Cache-Control', 'public, max-age=7200')
-  @ApiOkResponse({ type: BuildFirmwareDTO })
-  getDefaultConfig(@Param('board') board: BoardType): BuildFirmwareDTO {
-    const dto = new BuildFirmwareDTO();
-    dto.board = new FirmwareBoardDTO();
-    dto.board.type = board;
+  @ApiOkResponse({
+    type: DefaultBuildConfigDTO,
+    description: 'Gives the default pins / configuration of a given board',
+  })
+  getDefaultConfig(@Param('board') board: BoardType): DefaultBuildConfigDTO {
+    const buildConfig = new DefaultBuildConfigDTO();
+    buildConfig.boardConfig = {
+      ...AVAILABLE_BOARDS[board].defaults,
+      batteryType: AVAILABLE_BOARDS[board].defaults.batteryType as BatteryType, // oof
+      type: board,
+    };
+    buildConfig.imuPins = AVAILABLE_BOARDS[board].imuPins;
 
-    const imu = new IMUConfigDTO();
-    imu.type = IMUType.IMU_MPU6050;
-
-    dto.imus = [imu];
-
-    return BuildFirmwareDTO.completeDefaults(dto);
+    return buildConfig;
   }
 
+  /**
+   * Get the inforamtions about a firmware from its id
+   */
   @Get('/:id')
   @Header('Cache-Control', 'no-cache')
-  @ApiResponse({ type: Firmware })
+  @ApiResponse({
+    type: FirmwareDTO,
+    description: 'Get the inforamtions about a firmware from its id',
+  })
   @ApiNotFoundResponse()
   async getFirmware(@Param('id') id: string) {
     try {

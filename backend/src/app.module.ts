@@ -1,20 +1,10 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { FirmwareModule } from './firmware/firmware.module';
-import { connectionSource } from './config/typeorm.datasource';
 import { CacheModule } from '@nestjs/cache-manager';
+import { HealthModule } from './health/health.module';
 
 @Module({
-  imports: [
-    CacheModule.register(),
-    TypeOrmModule.forRootAsync({
-      useFactory: () => ({}),
-      dataSourceFactory: async () => {
-        return connectionSource.initialize();
-      },
-    }),
-    FirmwareModule,
-  ],
+  imports: [CacheModule.register(), FirmwareModule, HealthModule],
   controllers: [],
   providers: [],
   exports: [],

@@ -34,6 +34,8 @@ const defaultFormValues = {
     battery: {
       type: null,
       resistance: null,
+      shieldR1: null,
+      shieldR2: null,
       pin: null
     },
     wifi: {
