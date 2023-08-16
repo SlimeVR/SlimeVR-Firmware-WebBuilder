@@ -67,14 +67,14 @@ model ImuConfig {
   sclPin     String
   sdaPin     String
   firmware   Firmware @relation(fields: [firmwareId], references: [id], onDelete: Cascade)
-  firmwareId String   @unique
+  firmwareId String
 }
 
 model FirmwareFile {
-  url        String
+  url        String   @unique
   offset     Int
   firmware   Firmware @relation(fields: [firmwareId], references: [id], onDelete: Cascade)
-  firmwareId String   @unique
+  firmwareId String
 }
 
 model Firmware {
