@@ -54,7 +54,7 @@ export class FirmwareBuilderService {
 
     // this is to deal with old firmware versions where two imus where always declared
     // i just use the values of the first one if i only have one
-    const secondImu = imusConfig.length === 1 ? imusConfig[0] : imusConfig[2];
+    const secondImu = imusConfig.length === 1 ? imusConfig[0] : imusConfig[1];
 
     return `
           #define IMU ${imusConfig[0].type}
@@ -65,20 +65,20 @@ export class FirmwareBuilderService {
 
           #ifndef IMU_DESC_LIST
           #define IMU_DESC_LIST \\
-            ${imusConfig
-              .map(
-                (imuConfig, index) =>
-                  `IMU_DESC_ENTRY(${imuConfig.type}, ${
-                    (IMUS.find(({ type }) => type === imuConfig.type)
-                      ?.imuStartAddress || 0x69) + index
-                  }, ${rotationToFirmware(imuConfig.rotation)}, ${
-                    imuConfig.sclPin
-                  }, ${imuConfig.sdaPin}, ${imuConfig.intPin || 255})`,
-              )
-              .join('\\\n')}
+                ${imusConfig
+                  .map(
+                    (imuConfig, index) =>
+                      `IMU_DESC_ENTRY(${imuConfig.type}, ${
+                        (IMUS.find(({ type }) => type === imuConfig.type)
+                          ?.imuStartAddress || 0x69) + index
+                      }, ${rotationToFirmware(imuConfig.rotation)}, ${
+                        imuConfig.sclPin
+                      }, ${imuConfig.sdaPin}, ${imuConfig.intPin || 255})`,
+                  )
+                  .join(' \\\n\t\t ')}
           #endif
 
-          #define BATTERY_MONITOR ${boardConfig.type}
+          #define BATTERY_MONITOR ${boardConfig.batteryType}
           ${
             boardConfig.batteryType === BatteryType.BAT_EXTERNAL &&
             `
@@ -130,7 +130,22 @@ export class FirmwareBuilderService {
       const release = await this.githubService.getRelease(owner, repo, version);
 
       const firmware = await this.prisma.firmware.findFirst({
-        where: { releaseId: release.id, buildStatus: { not: 'FAILED' } }, // TODO missing build config
+        where: {
+          releaseId: release.id,
+          buildStatus: { not: 'FAILED' },
+          boardConfig: {
+            ...dto.boardConfig,
+            batteryResistances: {
+              equals: dto.boardConfig.batteryResistances,
+            },
+          },
+          imusConfig: {
+            // This might not be really efficient if we have many imus on one firmware
+            // one solution could be to have a hash off all the imus value and use it as a key instead
+            // but as for now the current solution is still fast enough
+            every: { OR: dto.imusConfig },
+          },
+        },
         include: { firmwareFiles: true },
       });
 
