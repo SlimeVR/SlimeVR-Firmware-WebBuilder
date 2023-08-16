@@ -415,7 +415,10 @@ export class FirmwareBuilderService {
     rootFoler: string,
   ): { path: string; offset: number }[] {
     return AVAILABLE_BOARDS[boardType].partitions.map(
-      ({ path, ...fields }) => ({ ...fields, path: join(rootFoler, path) }),
+      ({ path, ...fields }) => ({
+        ...fields,
+        path: path.charAt(0) === '/' ? path : join(rootFoler, path),
+      }),
     );
   }
 
