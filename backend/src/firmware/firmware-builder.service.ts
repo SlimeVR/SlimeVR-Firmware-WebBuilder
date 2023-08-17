@@ -52,6 +52,19 @@ export class FirmwareBuilderService {
       return (-(rotation % 360) / 180) * Math.PI;
     };
 
+    /**
+     * Define of one imu entry, computes the address
+     */
+    const imuDesc = (imuConfig, index) => {
+      const imu = IMUS.find(({ type }) => type === imuConfig.type);
+
+      return `IMU_DESC_ENTRY(${imuConfig.type}, ${
+        (imu?.imuStartAddress || 0x69) + index * (imu?.addressIncrement || 1)
+      }, ${rotationToFirmware(imuConfig.rotation)}, ${imuConfig.sclPin}, ${
+        imuConfig.sdaPin
+      }, ${imuConfig.intPin || 255})`;
+    };
+
     // this is to deal with old firmware versions where two imus where always declared
     // i just use the values of the first one if i only have one
     const secondImu = imusConfig.length === 1 ? imusConfig[0] : imusConfig[1];
@@ -65,17 +78,7 @@ export class FirmwareBuilderService {
 
           #ifndef IMU_DESC_LIST
           #define IMU_DESC_LIST \\
-                ${imusConfig
-                  .map(
-                    (imuConfig, index) =>
-                      `IMU_DESC_ENTRY(${imuConfig.type}, ${
-                        (IMUS.find(({ type }) => type === imuConfig.type)
-                          ?.imuStartAddress || 0x69) + index
-                      }, ${rotationToFirmware(imuConfig.rotation)}, ${
-                        imuConfig.sclPin
-                      }, ${imuConfig.sdaPin}, ${imuConfig.intPin || 255})`,
-                  )
-                  .join(' \\\n\t\t ')}
+                ${imusConfig.map(imuDesc).join(' \\\n\t\t ')}
           #endif
 
           #define BATTERY_MONITOR ${boardConfig.batteryType}

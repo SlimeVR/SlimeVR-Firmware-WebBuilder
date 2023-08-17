@@ -1,0 +1,969 @@
+{
+  "openapi": "3.0.1",
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Main Server"
+    }
+  ],
+  "info": {
+    "version": "0.0.1",
+    "title": "slimevr-firmware-server",
+    "description": "",
+    "license": {
+      "name": "UNLICENSED"
+    }
+  },
+  "paths": {
+    "/firmwares": {
+      "get": {
+        "tags": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FirmwareDTO"
+                  }
+                }
+              }
+            },
+            "x-nestia-encrypted": false
+          }
+        },
+        "description": "List all the built firmwares",
+        "x-nestia-namespace": "firmwares.getFirmwares",
+        "x-nestia-jsDocTags": [],
+        "x-nestia-method": "GET"
+      }
+    },
+    "/firmwares/build": {
+      "post": {
+        "tags": [],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBuildFirmwareDTO"
+              }
+            }
+          },
+          "required": true,
+          "x-nestia-encrypted": false
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuildResponseDTO"
+                }
+              }
+            },
+            "x-nestia-encrypted": false
+          },
+          "400": {
+            "description": "Version not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionNotFoundExeption"
+                }
+              }
+            }
+          }
+        },
+        "description": "Build a firmware from the requested configuration",
+        "x-nestia-namespace": "firmwares.build.buildFirmware",
+        "x-nestia-jsDocTags": [],
+        "x-nestia-method": "POST"
+      }
+    },
+    "/firmwares/boards": {
+      "get": {
+        "tags": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "x-nestia-encrypted": false
+          }
+        },
+        "description": "List all the possible board types",
+        "x-nestia-namespace": "firmwares.boards.getBoardsTypes",
+        "x-nestia-jsDocTags": [],
+        "x-nestia-method": "GET"
+      }
+    },
+    "/firmwares/versions": {
+      "get": {
+        "tags": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReleaseDTO"
+                  }
+                }
+              }
+            },
+            "x-nestia-encrypted": false
+          }
+        },
+        "description": "List all the possible versions to build a firmware from",
+        "x-nestia-namespace": "firmwares.versions.getVersions",
+        "x-nestia-jsDocTags": [],
+        "x-nestia-method": "GET"
+      }
+    },
+    "/firmwares/imus": {
+      "get": {
+        "tags": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/IMUDTO"
+                  }
+                }
+              }
+            },
+            "x-nestia-encrypted": false
+          }
+        },
+        "description": "List all the possible imus to use",
+        "x-nestia-namespace": "firmwares.imus.getIMUSTypes",
+        "x-nestia-jsDocTags": [],
+        "x-nestia-method": "GET"
+      }
+    },
+    "/firmwares/batteries": {
+      "get": {
+        "tags": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "x-nestia-encrypted": false
+          }
+        },
+        "description": "List all the battery types",
+        "x-nestia-namespace": "firmwares.batteries.getBatteriesTypes",
+        "x-nestia-jsDocTags": [],
+        "x-nestia-method": "GET"
+      }
+    },
+    "/firmwares/default-config/{board}": {
+      "get": {
+        "tags": [],
+        "parameters": [
+          {
+            "name": "board",
+            "in": "path",
+            "description": "",
+            "schema": {
+              "$ref": "#/components/schemas/BoardType"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DefaultBuildConfigDTO"
+                }
+              }
+            },
+            "x-nestia-encrypted": false
+          }
+        },
+        "description": "Gives the default pins / configuration of a given board",
+        "x-nestia-namespace": "firmwares.default-config.getDefaultConfig",
+        "x-nestia-jsDocTags": [],
+        "x-nestia-method": "GET"
+      }
+    },
+    "/firmwares/{id}": {
+      "get": {
+        "tags": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FirmwareDTO"
+                }
+              }
+            },
+            "x-nestia-encrypted": false
+          },
+          "404": {
+            "description": "Firmware not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpException"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get the inforamtions about a firmware from its id",
+        "x-nestia-namespace": "firmwares.getFirmware",
+        "x-nestia-jsDocTags": [],
+        "x-nestia-method": "GET"
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Boolean, is the api healty or not",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "x-nestia-encrypted": false
+          }
+        },
+        "description": "Gives the status of the api\nthis endpoint will always return true",
+        "x-nestia-namespace": "health.getHealth",
+        "x-nestia-jsDocTags": [
+          {
+            "name": "tag",
+            "text": [
+              {
+                "text": "health",
+                "kind": "text"
+              }
+            ]
+          },
+          {
+            "name": "returns",
+            "text": [
+              {
+                "text": "Boolean, is the api healty or not",
+                "kind": "text"
+              }
+            ]
+          }
+        ],
+        "x-nestia-method": "GET"
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "FirmwareDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "UUID of the firmware",
+            "x-typia-metaTags": [
+              {
+                "kind": "format",
+                "value": "uuid"
+              }
+            ],
+            "x-typia-jsDocTags": [
+              {
+                "name": "format",
+                "text": [
+                  {
+                    "text": "uuid",
+                    "kind": "text"
+                  }
+                ]
+              }
+            ],
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string",
+            "format": "uuid"
+          },
+          "releaseId": {
+            "description": "Id of the firmware version used.\nUsually the commit id of the source\nused to build the firmware",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string"
+          },
+          "buildStatus": {
+            "$ref": "#/components/schemas/BuildStatus"
+          },
+          "buildVersion": {
+            "description": "The repository and branch used as source of the firmware",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string"
+          },
+          "createdAt": {
+            "description": "The date of creation of this firmware build",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "nullable": false,
+        "required": [
+          "id",
+          "releaseId",
+          "buildStatus",
+          "buildVersion",
+          "createdAt"
+        ],
+        "description": "Root object declaring a built firmware\nthis object contains:\n - the status of the build\n - the the repository and commit used as source",
+        "x-typia-jsDocTags": []
+      },
+      "BuildStatus": {
+        "type": "string",
+        "enum": [
+          "BUILDING",
+          "DONE",
+          "FAILED"
+        ]
+      },
+      "CreateBuildFirmwareDTO": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "description": "Repository of the firmware used",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string"
+          },
+          "boardConfig": {
+            "$ref": "#/components/schemas/CreateBoardConfigDTO"
+          },
+          "imusConfig": {
+            "description": "Imu config, list of all the imus used and their pins",
+            "x-typia-metaTags": [
+              {
+                "kind": "minItems",
+                "value": 1
+              }
+            ],
+            "x-typia-jsDocTags": [
+              {
+                "name": "minItems",
+                "text": [
+                  {
+                    "text": "1",
+                    "kind": "text"
+                  }
+                ]
+              }
+            ],
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateImuConfigDTO"
+            },
+            "minItems": 1
+          }
+        },
+        "nullable": false,
+        "required": [
+          "version",
+          "boardConfig",
+          "imusConfig"
+        ],
+        "x-typia-jsDocTags": []
+      },
+      "CreateBoardConfigDTO": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/BoardType"
+          },
+          "ledPin": {
+            "description": "Pin address of the indicator LED",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string"
+          },
+          "enableLed": {
+            "description": "Is the indicator LED enabled",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "boolean"
+          },
+          "ledInverted": {
+            "description": "Is the led inverted",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "boolean"
+          },
+          "batteryPin": {
+            "description": "Pin address of the battery indicator",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string"
+          },
+          "batteryType": {
+            "$ref": "#/components/schemas/BatteryType"
+          },
+          "batteryResistances": {
+            "description": "Array of the different battery resistors, [indicator, SHIELD_R1, SHIELD_R2]",
+            "x-typia-metaTags": [
+              {
+                "kind": "minItems",
+                "value": 3
+              },
+              {
+                "kind": "maxItems",
+                "value": 3
+              }
+            ],
+            "x-typia-jsDocTags": [
+              {
+                "name": "minItems",
+                "text": [
+                  {
+                    "text": "3",
+                    "kind": "text"
+                  }
+                ]
+              },
+              {
+                "name": "maxItems",
+                "text": [
+                  {
+                    "text": "3",
+                    "kind": "text"
+                  }
+                ]
+              }
+            ],
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "array",
+            "items": {
+              "description": "Array of the different battery resistors, [indicator, SHIELD_R1, SHIELD_R2]",
+              "x-typia-metaTags": [
+                {
+                  "kind": "minItems",
+                  "value": 3
+                },
+                {
+                  "kind": "maxItems",
+                  "value": 3
+                }
+              ],
+              "x-typia-jsDocTags": [
+                {
+                  "name": "minItems",
+                  "text": [
+                    {
+                      "text": "3",
+                      "kind": "text"
+                    }
+                  ]
+                },
+                {
+                  "name": "maxItems",
+                  "text": [
+                    {
+                      "text": "3",
+                      "kind": "text"
+                    }
+                  ]
+                }
+              ],
+              "x-typia-required": true,
+              "x-typia-optional": false,
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          }
+        },
+        "nullable": false,
+        "required": [
+          "type",
+          "ledPin",
+          "enableLed",
+          "ledInverted",
+          "batteryPin",
+          "batteryType",
+          "batteryResistances"
+        ],
+        "x-typia-jsDocTags": []
+      },
+      "BoardType": {
+        "type": "string",
+        "enum": [
+          "BOARD_SLIMEVR",
+          "BOARD_SLIMEVR_DEV",
+          "BOARD_NODEMCU",
+          "BOARD_WROOM32",
+          "BOARD_WEMOSD1MINI",
+          "BOARD_TTGO_TBASE",
+          "BOARD_ESP01"
+        ]
+      },
+      "BatteryType": {
+        "type": "string",
+        "enum": [
+          "BAT_EXTERNAL",
+          "BAT_INTERNAL",
+          "BAT_MCP3021",
+          "BAT_INTERNAL_MCP3021"
+        ]
+      },
+      "CreateImuConfigDTO": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/ImuType"
+          },
+          "rotation": {
+            "description": "Rotation of the imu in degrees",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "number"
+          },
+          "intPin": {
+            "description": "Pin address of the imu int pin\nnot all imus use it",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string",
+            "nullable": true
+          },
+          "sclPin": {
+            "description": "Pin address of the scl pin",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string"
+          },
+          "sdaPin": {
+            "description": "Pin address of the sda pin",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string"
+          }
+        },
+        "nullable": false,
+        "required": [
+          "type",
+          "rotation",
+          "intPin",
+          "sclPin",
+          "sdaPin"
+        ],
+        "x-typia-jsDocTags": []
+      },
+      "ImuType": {
+        "type": "string",
+        "enum": [
+          "IMU_MPU9250",
+          "IMU_MPU6500",
+          "IMU_BNO080",
+          "IMU_BNO085",
+          "IMU_BNO055",
+          "IMU_BNO086",
+          "IMU_MPU6050",
+          "IMU_BMI160",
+          "IMU_ICM20948",
+          "IMU_BMI270"
+        ]
+      },
+      "VersionNotFoundExeption": {
+        "type": "object",
+        "properties": {
+          "cause": {
+            "x-typia-required": true,
+            "x-typia-optional": false
+          },
+          "name": {
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string"
+          },
+          "message": {
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string"
+          },
+          "stack": {
+            "x-typia-required": false,
+            "x-typia-optional": true,
+            "type": "string"
+          }
+        },
+        "nullable": false,
+        "required": [
+          "cause",
+          "name",
+          "message"
+        ],
+        "x-typia-jsDocTags": []
+      },
+      "BuildResponseDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "Id of the firmware",
+            "x-typia-metaTags": [
+              {
+                "kind": "format",
+                "value": "uuid"
+              }
+            ],
+            "x-typia-jsDocTags": [
+              {
+                "name": "see",
+                "text": [
+                  {
+                    "text": "{Firmware}",
+                    "kind": "text"
+                  }
+                ]
+              },
+              {
+                "name": "format",
+                "text": [
+                  {
+                    "text": "uuid",
+                    "kind": "text"
+                  }
+                ]
+              }
+            ],
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BuildStatus"
+          },
+          "firmwareFiles": {
+            "description": "List of built firmware files, only set if the build succeeded",
+            "x-typia-required": false,
+            "x-typia-optional": true,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FirmwareFileDTO"
+            }
+          }
+        },
+        "nullable": false,
+        "required": [
+          "id",
+          "status"
+        ],
+        "x-typia-jsDocTags": []
+      },
+      "FirmwareFileDTO": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "description": "Url to the file",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string"
+          },
+          "offset": {
+            "description": "Address of the partition",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "number"
+          },
+          "firmwareId": {
+            "description": "Id of the linked firmware",
+            "x-typia-metaTags": [
+              {
+                "kind": "format",
+                "value": "uuid"
+              }
+            ],
+            "x-typia-jsDocTags": [
+              {
+                "name": "format",
+                "text": [
+                  {
+                    "text": "uuid",
+                    "kind": "text"
+                  }
+                ]
+              }
+            ],
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "nullable": false,
+        "required": [
+          "url",
+          "offset",
+          "firmwareId"
+        ],
+        "x-typia-jsDocTags": []
+      },
+      "ReleaseDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "id of the release, usually the commit id",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string"
+          },
+          "url": {
+            "description": "url of the release",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string"
+          },
+          "name": {
+            "description": "name of the release",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string"
+          },
+          "zipball_url": {
+            "description": "url of the source archive",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string"
+          },
+          "prerelease": {
+            "description": "Is this release a pre release",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "boolean"
+          },
+          "draft": {
+            "description": "Is this release a draft",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "boolean"
+          }
+        },
+        "nullable": false,
+        "required": [
+          "id",
+          "url",
+          "name",
+          "zipball_url",
+          "prerelease",
+          "draft"
+        ],
+        "x-typia-jsDocTags": []
+      },
+      "IMUDTO": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/ImuType"
+          },
+          "hasIntPin": {
+            "description": "Does that imu type require a int pin",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "boolean"
+          },
+          "imuStartAddress": {
+            "description": "First address of the imu",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "number"
+          },
+          "addressIncrement": {
+            "description": "Increment of the address for each new imus",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "number"
+          }
+        },
+        "nullable": false,
+        "required": [
+          "type",
+          "hasIntPin",
+          "imuStartAddress",
+          "addressIncrement"
+        ],
+        "x-typia-jsDocTags": []
+      },
+      "DefaultBuildConfigDTO": {
+        "type": "object",
+        "properties": {
+          "boardConfig": {
+            "$ref": "#/components/schemas/CreateBoardConfigDTO"
+          },
+          "imuPins": {
+            "description": "List of the possible imus pins, usually only two items will be sent",
+            "x-typia-metaTags": [
+              {
+                "kind": "minItems",
+                "value": 1
+              }
+            ],
+            "x-typia-jsDocTags": [
+              {
+                "name": "minItems",
+                "text": [
+                  {
+                    "text": "1",
+                    "kind": "text"
+                  }
+                ]
+              }
+            ],
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IMUDefaultPinsDTO"
+            },
+            "minItems": 1
+          }
+        },
+        "nullable": false,
+        "required": [
+          "boardConfig",
+          "imuPins"
+        ],
+        "x-typia-jsDocTags": []
+      },
+      "IMUDefaultPinsDTO": {
+        "type": "object",
+        "properties": {
+          "intPin": {
+            "description": "Pin address of the imu int pin\nnot all imus use it",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string",
+            "nullable": true
+          },
+          "sclPin": {
+            "description": "Pin address of the scl pin",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string"
+          },
+          "sdaPin": {
+            "description": "Pin address of the sda pin",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string"
+          }
+        },
+        "nullable": false,
+        "required": [
+          "intPin",
+          "sclPin",
+          "sdaPin"
+        ],
+        "x-typia-jsDocTags": []
+      },
+      "HttpException": {
+        "type": "object",
+        "properties": {
+          "cause": {
+            "x-typia-required": true,
+            "x-typia-optional": false
+          },
+          "name": {
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string"
+          },
+          "message": {
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string"
+          },
+          "stack": {
+            "x-typia-required": false,
+            "x-typia-optional": true,
+            "type": "string"
+          }
+        },
+        "nullable": false,
+        "required": [
+          "cause",
+          "name",
+          "message"
+        ],
+        "description": "Defines the base Nest HTTP exception, which is handled by the default\nExceptions Handler.",
+        "x-typia-jsDocTags": [
+          {
+            "name": "see",
+            "text": [
+              {
+                "text": "[Built-in HTTP exceptions](https://docs.nestjs.com/exception-filters#built-in-http-exceptions)",
+                "kind": "text"
+              }
+            ]
+          },
+          {
+            "name": "publicApi"
+          }
+        ]
+      }
+    }
+  }
+}

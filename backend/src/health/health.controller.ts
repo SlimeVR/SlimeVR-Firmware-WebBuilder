@@ -1,18 +1,17 @@
-import { Controller, Get, HttpCode } from '@nestjs/common';
-import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { TypedRoute } from '@nestia/core';
+import { Controller } from '@nestjs/common';
 
-@ApiTags('health')
 @Controller('health')
 export class HealthController {
   /**
    * Gives the status of the api
    * this endpoint will always return true
    *
+   * @tag health
+   *
    * @returns Boolean, is the api healty or not
    */
-  @Get('/')
-  @HttpCode(300)
-  @ApiOkResponse({ type: [Boolean], description: 'is the api healthy' })
+  @TypedRoute.Get('/')
   getHealth(): boolean {
     return true;
   }

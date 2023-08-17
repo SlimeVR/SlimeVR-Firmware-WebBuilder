@@ -27,7 +27,7 @@
             {
                 "sdaPin": "14",
                 "sclPin": "12",
-                "intPin": "16"
+                "intPin": "13"
             }
         ]
     },
