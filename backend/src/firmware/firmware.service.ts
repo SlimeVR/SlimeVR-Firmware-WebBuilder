@@ -10,7 +10,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { InjectAws } from 'aws-sdk-v3-nest';
 import { PrismaService } from 'src/commons/prisma/prisma.service';
-import { Firmware } from '@prisma/client';
+import { Firmware, Prisma } from '@prisma/client';
 
 @Injectable()
 export class FirmwareService implements OnApplicationBootstrap {
@@ -25,10 +25,14 @@ export class FirmwareService implements OnApplicationBootstrap {
     return this.prisma.firmware.findMany({ where: { buildStatus: 'DONE' } });
   }
 
-  public getFirmware(id: string): Promise<Firmware> {
+  public getFirmware(id: string): Promise<
+    Prisma.FirmwareGetPayload<{
+      include: { boardConfig: true; imusConfig: true; firmwareFiles: true };
+    }>
+  > {
     return this.prisma.firmware.findFirstOrThrow({
       where: { id },
-      include: { boardConfig: true, imusConfig: true },
+      include: { boardConfig: true, imusConfig: true, firmwareFiles: true },
     });
   }
 

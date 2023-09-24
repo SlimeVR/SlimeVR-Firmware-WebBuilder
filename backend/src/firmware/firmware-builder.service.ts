@@ -1,10 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { CreateBuildFirmwareDTO } from './dto/build-firmware.dto';
 import { BuildResponseDTO, BuildStatusMessage } from './dto/build-response.dto';
-import {
-  AVAILABLE_BOARDS,
-  AVAILABLE_FIRMWARE_REPOS,
-} from './firmware.constants';
+import { AVAILABLE_FIRMWARE_REPOS } from './firmware.constants';
 import { GithubService } from 'src/github/github.service';
 import { PrismaService } from 'src/commons/prisma/prisma.service';
 import {
@@ -17,13 +14,13 @@ import {
 import { VersionNotFoundExeption } from './errors/version-not-found.error';
 import { Subject, debounceTime, filter, map } from 'rxjs';
 import { ReleaseDTO } from 'src/github/dto/release.dto';
-import { mkdtemp, readdir, readFile, rm, writeFile } from 'fs/promises';
+import { mkdtemp, readdir, readFile, rename, rm, writeFile } from 'fs/promises';
 import path, { join } from 'path';
 import os from 'os';
 import AdmZip from 'adm-zip';
 import fs from 'fs';
 import fetch from 'node-fetch';
-import { exec } from 'child_process';
+import { exec, execSync } from 'child_process';
 import { APP_CONFIG, ConfigService } from 'src/config/config.service';
 import { BoardConfigDTO } from './dto/board-config.dto';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
@@ -75,6 +72,8 @@ export class FirmwareBuilderService {
           #define BOARD ${boardConfig.type}
           #define IMU_ROTATION ${rotationToFirmware(imusConfig[0].rotation)}
           #define SECOND_IMU_ROTATION ${rotationToFirmware(secondImu.rotation)}
+
+          #define MAX_IMU_COUNT ${imusConfig.length}
 
           #ifndef IMU_DESC_LIST
           #define IMU_DESC_LIST \\
@@ -210,11 +209,13 @@ export class FirmwareBuilderService {
     let tmpDir;
 
     try {
-      this.buildStatusSubject.next({
-        status: BuildStatus.BUILDING,
-        id: firmware.id,
-        message: 'Creating temporary build folder',
-      });
+      this.buildStatusSubject.next(
+        new BuildStatusMessage(
+          firmware.id,
+          BuildStatus.BUILDING,
+          'Creating temporary build folder',
+        ),
+      );
 
       tmpDir = await mkdtemp(path.join(os.tmpdir(), 'slimevr-api'));
 
@@ -234,19 +235,23 @@ export class FirmwareBuilderService {
         });
       };
 
-      this.buildStatusSubject.next({
-        status: BuildStatus.BUILDING,
-        id: firmware.id,
-        message: 'Downloading SlimeVR firmware from Github',
-      });
+      this.buildStatusSubject.next(
+        new BuildStatusMessage(
+          firmware.id,
+          BuildStatus.BUILDING,
+          'Downloading SlimeVR firmware from Github',
+        ),
+      );
 
       await downloadFile(release.zipball_url, releaseFilePath);
 
-      this.buildStatusSubject.next({
-        status: BuildStatus.BUILDING,
-        id: firmware.id,
-        message: 'Extracting firmware',
-      });
+      this.buildStatusSubject.next(
+        new BuildStatusMessage(
+          firmware.id,
+          BuildStatus.BUILDING,
+          'Extracting firmware',
+        ),
+      );
 
       const releaseFolderPath = path.join(tmpDir, `release-${release.name}`);
       const zip = new AdmZip(releaseFilePath);
@@ -257,11 +262,13 @@ export class FirmwareBuilderService {
         resolve(true);
       });
 
-      this.buildStatusSubject.next({
-        status: BuildStatus.BUILDING,
-        id: firmware.id,
-        message: 'Setting up defines and configs',
-      });
+      this.buildStatusSubject.next(
+        new BuildStatusMessage(
+          firmware.id,
+          BuildStatus.BUILDING,
+          'Setting up defines and configs',
+        ),
+      );
 
       const [root] = await readdir(releaseFolderPath);
       const rootFoler = path.join(releaseFolderPath, root);
@@ -271,15 +278,25 @@ export class FirmwareBuilderService {
         firmware.imusConfig,
       );
       console.log(definesContent);
-      await Promise.all([
+      const res = await Promise.all([
         writeFile(path.join(rootFoler, 'src', 'defines.h'), definesContent),
       ]);
 
-      this.buildStatusSubject.next({
-        status: BuildStatus.BUILDING,
-        id: firmware.id,
-        message: 'Building Firmware (this might take a minute)',
-      });
+      await rm(join(rootFoler, 'platformio.ini'));
+      await rename(
+        join(rootFoler, 'platformio-tools.ini'),
+        join(rootFoler, 'platformio.ini'),
+      );
+
+      console.log(res);
+
+      this.buildStatusSubject.next(
+        new BuildStatusMessage(
+          firmware.id,
+          BuildStatus.BUILDING,
+          'Building Firmware (this might take a minute)',
+        ),
+      );
 
       await new Promise((resolve, reject) => {
         if (!firmware.boardConfig) {
@@ -287,7 +304,7 @@ export class FirmwareBuilderService {
           return;
         }
         const platformioRun = exec(
-          `platformio run -e ${firmware.boardConfig.type} -c platformio-tools.ini`,
+          `platformio run -e ${firmware.boardConfig.type}`,
           {
             cwd: rootFoler,
             env: {
@@ -306,11 +323,13 @@ export class FirmwareBuilderService {
             );
 
           console.log('[BUILD LOG]', `[${firmware.id}]`, data.toString());
-          this.buildStatusSubject.next({
-            status: BuildStatus.BUILDING,
-            id: firmware.id,
-            message: 'Building Firmware (this might take a minute)',
-          });
+          this.buildStatusSubject.next(
+            new BuildStatusMessage(
+              firmware.id,
+              BuildStatus.BUILDING,
+              'Building Firmware (this might take a minute)',
+            ),
+          );
         });
 
         platformioRun.stderr?.on('data', (data) => {
@@ -329,13 +348,18 @@ export class FirmwareBuilderService {
         });
       });
 
-      this.buildStatusSubject.next({
-        status: BuildStatus.BUILDING,
-        id: firmware.id,
-        message: 'Uploading Firmware to Bucket',
-      });
+      this.buildStatusSubject.next(
+        new BuildStatusMessage(
+          firmware.id,
+          BuildStatus.BUILDING,
+          'Uploading Firmware to Bucket',
+        ),
+      );
 
-      const files = this.getPartitions(firmware.boardConfig.type, rootFoler);
+      const files = await this.getPartitions(
+        firmware.boardConfig.type,
+        rootFoler,
+      );
 
       await Promise.all(
         files.map(async ({ path }, index) =>
@@ -365,22 +389,26 @@ export class FirmwareBuilderService {
         },
       });
 
-      this.buildStatusSubject.next({
-        status: BuildStatus.DONE,
-        id: firmware.id,
-        message: 'Build complete',
-        firmwareFiles: firmwareFiles.map((file) => ({
-          ...file,
-          firmwareId: firmware.id,
-        })),
-      });
+      this.buildStatusSubject.next(
+        new BuildStatusMessage(
+          firmware.id,
+          BuildStatus.DONE,
+          'Build complete',
+          firmwareFiles.map((file) => ({
+            ...file,
+            firmwareId: firmware.id,
+          })),
+        ),
+      );
     } catch (e) {
       console.log(e);
-      this.buildStatusSubject.next({
-        status: BuildStatus.FAILED,
-        id: firmware.id,
-        message: `Build failed: ${e.message || e}`,
-      });
+      this.buildStatusSubject.next(
+        new BuildStatusMessage(
+          firmware.id,
+          BuildStatus.FAILED,
+          `Build failed: ${e.message || e}`,
+        ),
+      );
       await this.prisma.firmware.update({
         where: { id: firmware.id },
         data: { buildStatus: BuildStatus.FAILED },
@@ -413,16 +441,37 @@ export class FirmwareBuilderService {
   /**
    * Get the board partitions infos
    */
-  private getPartitions(
+  private async getPartitions(
     boardType: BoardType,
     rootFoler: string,
-  ): { path: string; offset: number }[] {
-    return AVAILABLE_BOARDS[boardType].partitions.map(
-      ({ path, ...fields }) => ({
-        ...fields,
-        path: path.charAt(0) === '/' ? path : join(rootFoler, path),
-      }),
-    );
+  ): Promise<{ path: string; offset: number }[]> {
+    const ideInfos = (await new Promise((resolve) => {
+      const metadata = execSync(
+        `platformio project metadata --json-output -e ${boardType}`,
+        {
+          cwd: rootFoler,
+          shell: '/bin/bash',
+        },
+      );
+      resolve(JSON.parse(metadata.toString()));
+    })) as {
+      [key: string]: {
+        extra: {
+          flash_images: { offset: string; path: string }[];
+          application_offset: string;
+        };
+      };
+    };
+
+    return [
+      ...ideInfos[boardType].extra.flash_images.map(
+        ({ offset, ...fields }) => ({ offset: parseInt(offset), ...fields }),
+      ),
+      {
+        path: join(rootFoler, `.pio/build/${boardType}/firmware.bin`),
+        offset: parseInt(ideInfos[boardType].extra.application_offset),
+      },
+    ];
   }
 
   /**

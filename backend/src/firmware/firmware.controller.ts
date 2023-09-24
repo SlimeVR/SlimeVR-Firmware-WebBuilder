@@ -1,10 +1,8 @@
 import {
-  Body,
   Controller,
   Header,
   HttpException,
   HttpStatus,
-  Param,
   Sse,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -17,14 +15,19 @@ import {
   VersionNotFoundStatus,
 } from './errors/version-not-found.error';
 import { FirmwareService } from './firmware.service';
-import { FirmwareDTO } from './dto/firmware.dto';
+import { FirmwareDTO, FirmwareDetailDTO } from './dto/firmware.dto';
 import { BatteryType, BoardType } from '@prisma/client';
 import { CreateBuildFirmwareDTO } from './dto/build-firmware.dto';
 import { AVAILABLE_BOARDS } from './firmware.constants';
 import { DefaultBuildConfigDTO } from './dto/default-config.dto';
 import { FirmwareBuilderService } from './firmware-builder.service';
 import { Observable } from 'rxjs';
-import { TypedException, TypedRoute } from '@nestia/core';
+import {
+  TypedBody,
+  TypedException,
+  TypedParam,
+  TypedRoute,
+} from '@nestia/core';
 
 @ApiTags('firmware')
 @Controller('firmwares')
@@ -54,7 +57,7 @@ export class FirmwareController {
     VersionNotFoundError,
   )
   async buildFirmware(
-    @Body() body: CreateBuildFirmwareDTO,
+    @TypedBody() body: CreateBuildFirmwareDTO,
   ): Promise<BuildResponseDTO> {
     return this.firmwareBuilderService.buildFirmware(body);
   }
@@ -69,7 +72,7 @@ export class FirmwareController {
   @Sse('/build-status/:id')
   @Header('Cache-Control', 'no-cache')
   buildStatus(
-    @Param('id') id: string,
+    @TypedParam('id') id: string,
   ): Observable<{ data: BuildStatusMessage }> {
     return this.firmwareBuilderService.getBuildStatusSubject(id);
   }
@@ -115,7 +118,9 @@ export class FirmwareController {
    */
   @TypedRoute.Get('/default-config/:board')
   @Header('Cache-Control', 'public, max-age=7200')
-  getDefaultConfig(@Param('board') board: BoardType): DefaultBuildConfigDTO {
+  getDefaultConfig(
+    @TypedParam('board') board: BoardType,
+  ): DefaultBuildConfigDTO {
     const buildConfig = new DefaultBuildConfigDTO();
     buildConfig.boardConfig = {
       ...AVAILABLE_BOARDS[board].defaults,
@@ -129,11 +134,12 @@ export class FirmwareController {
 
   /**
    * Get the inforamtions about a firmware from its id
+   * also provide more informations than the simple list, like pins and imus and files
    */
   @TypedRoute.Get('/:id')
   @Header('Cache-Control', 'no-cache')
   @TypedException<HttpException>(HttpStatus.NOT_FOUND, 'Firmware not found')
-  async getFirmware(@Param('id') id: string): Promise<FirmwareDTO> {
+  async getFirmware(@TypedParam('id') id: string): Promise<FirmwareDetailDTO> {
     try {
       return await this.firmwareService.getFirmware(id);
     } catch {

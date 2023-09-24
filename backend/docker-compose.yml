@@ -46,6 +46,7 @@ services:
       S3_BUILDS_BUCKET: ${S3_BUILDS_BUCKET}
       GITHUB_AUTH: ${GITHUB_AUTH}
       HOST_URL: ${HOST_URL}
+      HOST_S3_URL: ${HOST_S3_URL}
       DATABASE_URL: ${DATABASE_URL}
   slimevr-api-s3:
     image: minio/minio:latest

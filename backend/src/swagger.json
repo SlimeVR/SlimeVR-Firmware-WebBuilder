@@ -17,7 +17,10 @@
   "paths": {
     "/firmwares": {
       "get": {
-        "tags": [],
+        "tags": [
+          "firmware"
+        ],
+        "operationId": "getFirmwares",
         "parameters": [],
         "responses": {
           "200": {
@@ -43,7 +46,10 @@
     },
     "/firmwares/build": {
       "post": {
-        "tags": [],
+        "tags": [
+          "firmware"
+        ],
+        "operationId": "postFirmwaresBuild",
         "parameters": [],
         "requestBody": {
           "content": {
@@ -87,7 +93,10 @@
     },
     "/firmwares/boards": {
       "get": {
-        "tags": [],
+        "tags": [
+          "firmware"
+        ],
+        "operationId": "getFirmwaresBoards",
         "parameters": [],
         "responses": {
           "200": {
@@ -113,7 +122,10 @@
     },
     "/firmwares/versions": {
       "get": {
-        "tags": [],
+        "tags": [
+          "firmware"
+        ],
+        "operationId": "getFirmwaresVersions",
         "parameters": [],
         "responses": {
           "200": {
@@ -139,7 +151,10 @@
     },
     "/firmwares/imus": {
       "get": {
-        "tags": [],
+        "tags": [
+          "firmware"
+        ],
+        "operationId": "getFirmwaresImus",
         "parameters": [],
         "responses": {
           "200": {
@@ -165,7 +180,10 @@
     },
     "/firmwares/batteries": {
       "get": {
-        "tags": [],
+        "tags": [
+          "firmware"
+        ],
+        "operationId": "getFirmwaresBatteries",
         "parameters": [],
         "responses": {
           "200": {
@@ -191,15 +209,27 @@
     },
     "/firmwares/default-config/{board}": {
       "get": {
-        "tags": [],
+        "tags": [
+          "firmware"
+        ],
+        "operationId": "getFirmwaresDefaultConfig:board",
         "parameters": [
           {
             "name": "board",
             "in": "path",
-            "description": "",
             "schema": {
-              "$ref": "#/components/schemas/BoardType"
+              "type": "string",
+              "enum": [
+                "BOARD_SLIMEVR",
+                "BOARD_SLIMEVR_DEV",
+                "BOARD_NODEMCU",
+                "BOARD_WROOM32",
+                "BOARD_WEMOSD1MINI",
+                "BOARD_TTGO_TBASE",
+                "BOARD_ESP01"
+              ]
             },
+            "description": "",
             "required": true
           }
         ],
@@ -224,15 +254,18 @@
     },
     "/firmwares/{id}": {
       "get": {
-        "tags": [],
+        "tags": [
+          "firmware"
+        ],
+        "operationId": "getFirmwares:id",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "",
             "schema": {
               "type": "string"
             },
+            "description": "",
             "required": true
           }
         ],
@@ -242,7 +275,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FirmwareDTO"
+                  "$ref": "#/components/schemas/FirmwareDetailDTO"
                 }
               }
             },
@@ -259,7 +292,7 @@
             }
           }
         },
-        "description": "Get the inforamtions about a firmware from its id",
+        "description": "Get the inforamtions about a firmware from its id\nalso provide more informations than the simple list, like pins and imus and files",
         "x-nestia-namespace": "firmwares.getFirmware",
         "x-nestia-jsDocTags": [],
         "x-nestia-method": "GET"
@@ -270,6 +303,7 @@
         "tags": [
           "health"
         ],
+        "operationId": "getHealth",
         "parameters": [],
         "responses": {
           "200": {
@@ -317,12 +351,6 @@
         "properties": {
           "id": {
             "description": "UUID of the firmware",
-            "x-typia-metaTags": [
-              {
-                "kind": "format",
-                "value": "uuid"
-              }
-            ],
             "x-typia-jsDocTags": [
               {
                 "name": "format",
@@ -337,7 +365,17 @@
             "x-typia-required": true,
             "x-typia-optional": false,
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "x-typia-typeTags": [
+              {
+                "name": "Format<uuid>",
+                "target": "string",
+                "kind": "format",
+                "value": "uuid",
+                "validate": "/^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000)$/i.test($input)",
+                "exclusive": true
+              }
+            ]
           },
           "releaseId": {
             "description": "Id of the firmware version used.\nUsually the commit id of the source\nused to build the firmware",
@@ -395,12 +433,6 @@
           },
           "imusConfig": {
             "description": "Imu config, list of all the imus used and their pins",
-            "x-typia-metaTags": [
-              {
-                "kind": "minItems",
-                "value": 1
-              }
-            ],
             "x-typia-jsDocTags": [
               {
                 "name": "minItems",
@@ -433,7 +465,30 @@
         "type": "object",
         "properties": {
           "type": {
-            "$ref": "#/components/schemas/BoardType"
+            "description": "Type of the board",
+            "x-typia-jsDocTags": [
+              {
+                "name": "see",
+                "text": [
+                  {
+                    "text": "{BoardType}",
+                    "kind": "text"
+                  }
+                ]
+              }
+            ],
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string",
+            "enum": [
+              "BOARD_SLIMEVR",
+              "BOARD_SLIMEVR_DEV",
+              "BOARD_NODEMCU",
+              "BOARD_WROOM32",
+              "BOARD_WEMOSD1MINI",
+              "BOARD_TTGO_TBASE",
+              "BOARD_ESP01"
+            ]
           },
           "ledPin": {
             "description": "Pin address of the indicator LED",
@@ -460,20 +515,30 @@
             "type": "string"
           },
           "batteryType": {
-            "$ref": "#/components/schemas/BatteryType"
+            "description": "Type of battery",
+            "x-typia-jsDocTags": [
+              {
+                "name": "see",
+                "text": [
+                  {
+                    "text": "{BatteryType}",
+                    "kind": "text"
+                  }
+                ]
+              }
+            ],
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string",
+            "enum": [
+              "BAT_EXTERNAL",
+              "BAT_INTERNAL",
+              "BAT_MCP3021",
+              "BAT_INTERNAL_MCP3021"
+            ]
           },
           "batteryResistances": {
             "description": "Array of the different battery resistors, [indicator, SHIELD_R1, SHIELD_R2]",
-            "x-typia-metaTags": [
-              {
-                "kind": "minItems",
-                "value": 3
-              },
-              {
-                "kind": "maxItems",
-                "value": 3
-              }
-            ],
             "x-typia-jsDocTags": [
               {
                 "name": "minItems",
@@ -499,16 +564,6 @@
             "type": "array",
             "items": {
               "description": "Array of the different battery resistors, [indicator, SHIELD_R1, SHIELD_R2]",
-              "x-typia-metaTags": [
-                {
-                  "kind": "minItems",
-                  "value": 3
-                },
-                {
-                  "kind": "maxItems",
-                  "value": 3
-                }
-              ],
               "x-typia-jsDocTags": [
                 {
                   "name": "minItems",
@@ -533,8 +588,8 @@
               "x-typia-optional": false,
               "type": "number"
             },
-            "minItems": 3,
-            "maxItems": 3
+            "maxItems": 3,
+            "minItems": 3
           }
         },
         "nullable": false,
@@ -549,32 +604,37 @@
         ],
         "x-typia-jsDocTags": []
       },
-      "BoardType": {
-        "type": "string",
-        "enum": [
-          "BOARD_SLIMEVR",
-          "BOARD_SLIMEVR_DEV",
-          "BOARD_NODEMCU",
-          "BOARD_WROOM32",
-          "BOARD_WEMOSD1MINI",
-          "BOARD_TTGO_TBASE",
-          "BOARD_ESP01"
-        ]
-      },
-      "BatteryType": {
-        "type": "string",
-        "enum": [
-          "BAT_EXTERNAL",
-          "BAT_INTERNAL",
-          "BAT_MCP3021",
-          "BAT_INTERNAL_MCP3021"
-        ]
-      },
       "CreateImuConfigDTO": {
         "type": "object",
         "properties": {
           "type": {
-            "$ref": "#/components/schemas/ImuType"
+            "description": "Type of the imu",
+            "x-typia-jsDocTags": [
+              {
+                "name": "see",
+                "text": [
+                  {
+                    "text": "{ImuType}",
+                    "kind": "text"
+                  }
+                ]
+              }
+            ],
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string",
+            "enum": [
+              "IMU_MPU9250",
+              "IMU_MPU6500",
+              "IMU_BNO080",
+              "IMU_BNO085",
+              "IMU_BNO055",
+              "IMU_BNO086",
+              "IMU_MPU6050",
+              "IMU_BMI160",
+              "IMU_ICM20948",
+              "IMU_BMI270"
+            ]
           },
           "rotation": {
             "description": "Rotation of the imu in degrees",
@@ -612,21 +672,6 @@
         ],
         "x-typia-jsDocTags": []
       },
-      "ImuType": {
-        "type": "string",
-        "enum": [
-          "IMU_MPU9250",
-          "IMU_MPU6500",
-          "IMU_BNO080",
-          "IMU_BNO085",
-          "IMU_BNO055",
-          "IMU_BNO086",
-          "IMU_MPU6050",
-          "IMU_BMI160",
-          "IMU_ICM20948",
-          "IMU_BMI270"
-        ]
-      },
       "VersionNotFoundExeption": {
         "type": "object",
         "properties": {
@@ -663,12 +708,6 @@
         "properties": {
           "id": {
             "description": "Id of the firmware",
-            "x-typia-metaTags": [
-              {
-                "kind": "format",
-                "value": "uuid"
-              }
-            ],
             "x-typia-jsDocTags": [
               {
                 "name": "see",
@@ -692,7 +731,17 @@
             "x-typia-required": true,
             "x-typia-optional": false,
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "x-typia-typeTags": [
+              {
+                "name": "Format<uuid>",
+                "target": "string",
+                "kind": "format",
+                "value": "uuid",
+                "validate": "/^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000)$/i.test($input)",
+                "exclusive": true
+              }
+            ]
           },
           "status": {
             "$ref": "#/components/schemas/BuildStatus"
@@ -731,12 +780,6 @@
           },
           "firmwareId": {
             "description": "Id of the linked firmware",
-            "x-typia-metaTags": [
-              {
-                "kind": "format",
-                "value": "uuid"
-              }
-            ],
             "x-typia-jsDocTags": [
               {
                 "name": "format",
@@ -751,7 +794,17 @@
             "x-typia-required": true,
             "x-typia-optional": false,
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "x-typia-typeTags": [
+              {
+                "name": "Format<uuid>",
+                "target": "string",
+                "kind": "format",
+                "value": "uuid",
+                "validate": "/^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000)$/i.test($input)",
+                "exclusive": true
+              }
+            ]
           }
         },
         "nullable": false,
@@ -847,6 +900,21 @@
         ],
         "x-typia-jsDocTags": []
       },
+      "ImuType": {
+        "type": "string",
+        "enum": [
+          "IMU_MPU9250",
+          "IMU_MPU6500",
+          "IMU_BNO080",
+          "IMU_BNO085",
+          "IMU_BNO055",
+          "IMU_BNO086",
+          "IMU_MPU6050",
+          "IMU_BMI160",
+          "IMU_ICM20948",
+          "IMU_BMI270"
+        ]
+      },
       "DefaultBuildConfigDTO": {
         "type": "object",
         "properties": {
@@ -855,12 +923,6 @@
           },
           "imuPins": {
             "description": "List of the possible imus pins, usually only two items will be sent",
-            "x-typia-metaTags": [
-              {
-                "kind": "minItems",
-                "value": 1
-              }
-            ],
             "x-typia-jsDocTags": [
               {
                 "name": "minItems",
@@ -963,6 +1025,385 @@
             "name": "publicApi"
           }
         ]
+      },
+      "FirmwareDetailDTO": {
+        "type": "object",
+        "properties": {
+          "boardConfig": {
+            "$ref": "#/components/schemas/BoardConfigDTO.Nullable"
+          },
+          "imusConfig": {
+            "description": "List of the declared imus, and their pin configuration",
+            "x-typia-jsDocTags": [
+              {
+                "name": "minItems",
+                "text": [
+                  {
+                    "text": "1",
+                    "kind": "text"
+                  }
+                ]
+              }
+            ],
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImuConfigDTO"
+            },
+            "minItems": 1
+          },
+          "firmwareFiles": {
+            "description": "List of the built files / partitions with their url and offsets",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FirmwareFileDTO"
+            }
+          },
+          "id": {
+            "description": "UUID of the firmware",
+            "x-typia-jsDocTags": [
+              {
+                "name": "format",
+                "text": [
+                  {
+                    "text": "uuid",
+                    "kind": "text"
+                  }
+                ]
+              }
+            ],
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string",
+            "format": "uuid",
+            "x-typia-typeTags": [
+              {
+                "name": "Format<uuid>",
+                "target": "string",
+                "kind": "format",
+                "value": "uuid",
+                "validate": "/^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000)$/i.test($input)",
+                "exclusive": true
+              }
+            ]
+          },
+          "releaseId": {
+            "description": "Id of the firmware version used.\nUsually the commit id of the source\nused to build the firmware",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string"
+          },
+          "buildStatus": {
+            "$ref": "#/components/schemas/BuildStatus"
+          },
+          "buildVersion": {
+            "description": "The repository and branch used as source of the firmware",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string"
+          },
+          "createdAt": {
+            "description": "The date of creation of this firmware build",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "nullable": false,
+        "required": [
+          "boardConfig",
+          "imusConfig",
+          "firmwareFiles",
+          "id",
+          "releaseId",
+          "buildStatus",
+          "buildVersion",
+          "createdAt"
+        ],
+        "x-typia-jsDocTags": []
+      },
+      "BoardConfigDTO.Nullable": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "Unique id of the board config, used for relations",
+            "x-typia-jsDocTags": [
+              {
+                "name": "format",
+                "text": [
+                  {
+                    "text": "uuid",
+                    "kind": "text"
+                  }
+                ]
+              }
+            ],
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string",
+            "format": "uuid",
+            "x-typia-typeTags": [
+              {
+                "name": "Format<uuid>",
+                "target": "string",
+                "kind": "format",
+                "value": "uuid",
+                "validate": "/^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000)$/i.test($input)",
+                "exclusive": true
+              }
+            ]
+          },
+          "type": {
+            "$ref": "#/components/schemas/BoardType"
+          },
+          "ledPin": {
+            "description": "Pin address of the indicator LED",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string"
+          },
+          "enableLed": {
+            "description": "Is the indicator LED enabled",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "boolean"
+          },
+          "ledInverted": {
+            "description": "Is the led inverted",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "boolean"
+          },
+          "batteryPin": {
+            "description": "Pin address of the battery indicator",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string"
+          },
+          "batteryType": {
+            "$ref": "#/components/schemas/BatteryType"
+          },
+          "batteryResistances": {
+            "description": "Array of the different battery resistors, [indicator, SHIELD_R1, SHIELD_R2]",
+            "x-typia-jsDocTags": [
+              {
+                "name": "minItems",
+                "text": [
+                  {
+                    "text": "3",
+                    "kind": "text"
+                  }
+                ]
+              },
+              {
+                "name": "maxItems",
+                "text": [
+                  {
+                    "text": "3",
+                    "kind": "text"
+                  }
+                ]
+              }
+            ],
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "array",
+            "items": {
+              "description": "Array of the different battery resistors, [indicator, SHIELD_R1, SHIELD_R2]",
+              "x-typia-jsDocTags": [
+                {
+                  "name": "minItems",
+                  "text": [
+                    {
+                      "text": "3",
+                      "kind": "text"
+                    }
+                  ]
+                },
+                {
+                  "name": "maxItems",
+                  "text": [
+                    {
+                      "text": "3",
+                      "kind": "text"
+                    }
+                  ]
+                }
+              ],
+              "x-typia-required": true,
+              "x-typia-optional": false,
+              "type": "number"
+            },
+            "maxItems": 3,
+            "minItems": 3
+          },
+          "firmwareId": {
+            "description": "Id of the linked firmware, used for relations",
+            "x-typia-jsDocTags": [
+              {
+                "name": "format",
+                "text": [
+                  {
+                    "text": "uuid",
+                    "kind": "text"
+                  }
+                ]
+              }
+            ],
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string",
+            "format": "uuid",
+            "x-typia-typeTags": [
+              {
+                "name": "Format<uuid>",
+                "target": "string",
+                "kind": "format",
+                "value": "uuid",
+                "validate": "/^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000)$/i.test($input)",
+                "exclusive": true
+              }
+            ]
+          }
+        },
+        "nullable": true,
+        "required": [
+          "id",
+          "type",
+          "ledPin",
+          "enableLed",
+          "ledInverted",
+          "batteryPin",
+          "batteryType",
+          "batteryResistances",
+          "firmwareId"
+        ],
+        "x-typia-jsDocTags": []
+      },
+      "BoardType": {
+        "type": "string",
+        "enum": [
+          "BOARD_SLIMEVR",
+          "BOARD_SLIMEVR_DEV",
+          "BOARD_NODEMCU",
+          "BOARD_WROOM32",
+          "BOARD_WEMOSD1MINI",
+          "BOARD_TTGO_TBASE",
+          "BOARD_ESP01"
+        ]
+      },
+      "BatteryType": {
+        "type": "string",
+        "enum": [
+          "BAT_EXTERNAL",
+          "BAT_INTERNAL",
+          "BAT_MCP3021",
+          "BAT_INTERNAL_MCP3021"
+        ]
+      },
+      "ImuConfigDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "Unique id of the config\nthis probably will never be shown to the user as it is moslty use for relations",
+            "x-typia-jsDocTags": [
+              {
+                "name": "format",
+                "text": [
+                  {
+                    "text": "uuid",
+                    "kind": "text"
+                  }
+                ]
+              }
+            ],
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string",
+            "format": "uuid",
+            "x-typia-typeTags": [
+              {
+                "name": "Format<uuid>",
+                "target": "string",
+                "kind": "format",
+                "value": "uuid",
+                "validate": "/^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000)$/i.test($input)",
+                "exclusive": true
+              }
+            ]
+          },
+          "type": {
+            "$ref": "#/components/schemas/ImuType"
+          },
+          "rotation": {
+            "description": "Rotation of the imu in degrees",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "number"
+          },
+          "intPin": {
+            "description": "Pin address of the imu int pin\nnot all imus use it",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string",
+            "nullable": true
+          },
+          "sclPin": {
+            "description": "Pin address of the scl pin",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string"
+          },
+          "sdaPin": {
+            "description": "Pin address of the sda pin",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string"
+          },
+          "firmwareId": {
+            "description": "id of the linked firmware, used for relations",
+            "x-typia-jsDocTags": [
+              {
+                "name": "format",
+                "text": [
+                  {
+                    "text": "uuid",
+                    "kind": "text"
+                  }
+                ]
+              }
+            ],
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "string",
+            "format": "uuid",
+            "x-typia-typeTags": [
+              {
+                "name": "Format<uuid>",
+                "target": "string",
+                "kind": "format",
+                "value": "uuid",
+                "validate": "/^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000)$/i.test($input)",
+                "exclusive": true
+              }
+            ]
+          }
+        },
+        "nullable": false,
+        "required": [
+          "id",
+          "type",
+          "rotation",
+          "intPin",
+          "sclPin",
+          "sdaPin",
+          "firmwareId"
+        ],
+        "x-typia-jsDocTags": []
       }
     }
   }

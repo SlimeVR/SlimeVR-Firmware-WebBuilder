@@ -5,7 +5,6 @@ import { DefaultBuildConfigDTO } from './dto/default-config.dto';
 export const AVAILABLE_FIRMWARE_REPOS = firmares;
 
 export type BoardDefault = {
-  partitions: { path: string; offset: number }[];
   defaults: Omit<
     DefaultBuildConfigDTO['boardConfig'],
     'type' | 'batteryType' | 'intPin'

@@ -38,4 +38,14 @@ export class BuildStatusMessage extends BuildResponseDTO {
   @ApiProperty({ required: true })
   @IsString()
   message: string;
+
+  constructor(
+    id: string,
+    status: BuildStatus,
+    message: string,
+    firmwareFiles: FirmwareFileDTO[] | undefined = undefined,
+  ) {
+    super(id, status, firmwareFiles);
+    this.message = message;
+  }
 }
