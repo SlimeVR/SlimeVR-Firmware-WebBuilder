@@ -54,12 +54,10 @@ export class FirmwareBuilderService {
      */
     const imuDesc = (imuConfig, index) => {
       const imu = IMUS.find(({ type }) => type === imuConfig.type);
+      if (!imu)
+        return null;
 
-      return `IMU_DESC_ENTRY(${imuConfig.type}, ${
-        (imu?.imuStartAddress || 0x69) + index * (imu?.addressIncrement || 1)
-      }, ${rotationToFirmware(imuConfig.rotation)}, ${imuConfig.sclPin}, ${
-        imuConfig.sdaPin
-      }, ${imuConfig.intPin || 255})`;
+      return `IMU_DESC_ENTRY(${imuConfig.type}, ${(imu.imuStartAddress) + index * (imu.addressIncrement)}, ${rotationToFirmware(imuConfig.rotation)}, ${imuConfig.sclPin}, ${imuConfig.sdaPin}, ${imuConfig.intPin || 255})`;
     };
 
     // this is to deal with old firmware versions where two imus where always declared
@@ -77,7 +75,7 @@ export class FirmwareBuilderService {
 
           #ifndef IMU_DESC_LIST
           #define IMU_DESC_LIST \\
-                ${imusConfig.map(imuDesc).join(' \\\n\t\t ')}
+                ${imusConfig.map(imuDesc).filter(imu => !!imu).join(' \\\n\t\t ')}
           #endif
 
           #define BATTERY_MONITOR ${boardConfig.batteryType}
