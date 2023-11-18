@@ -90,8 +90,8 @@ export class FirmwareService implements OnApplicationBootstrap {
     // We set all firmware builds that was in building state to failed
     // because the build did not complete and we have no way of resume the build
     await this.prisma.firmware.updateMany({
-      where: { buildStatus: 'BUILDING' },
-      data: { buildStatus: 'FAILED' },
+      where: { buildStatus: { not: 'DONE' } },
+      data: { buildStatus: 'ERROR' },
     });
     this.cleanAllOldReleases();
     // Check every hour for failed builds and remove them

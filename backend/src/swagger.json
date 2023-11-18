@@ -222,11 +222,16 @@
               "enum": [
                 "BOARD_SLIMEVR",
                 "BOARD_SLIMEVR_DEV",
+                "BOARD_SLIMEVR_LEGACY",
+                "BOARD_CUSTOM",
                 "BOARD_NODEMCU",
                 "BOARD_WROOM32",
                 "BOARD_WEMOSD1MINI",
                 "BOARD_TTGO_TBASE",
-                "BOARD_ESP01"
+                "BOARD_ESP01",
+                "BOARD_LOLIN_C3_MINI",
+                "BOARD_BEETLE32C32",
+                "BOARD_ES32C3DEVKITM1"
               ]
             },
             "description": "",
@@ -414,9 +419,14 @@
       "BuildStatus": {
         "type": "string",
         "enum": [
+          "CREATING_BUILD_FOLDER",
+          "DOWNLOADING_FIRMWARE",
+          "EXTRACTING_FIRMWARE",
+          "SETTING_UP_DEFINES",
           "BUILDING",
+          "SAVING",
           "DONE",
-          "FAILED"
+          "ERROR"
         ]
       },
       "CreateBuildFirmwareDTO": {
@@ -483,11 +493,16 @@
             "enum": [
               "BOARD_SLIMEVR",
               "BOARD_SLIMEVR_DEV",
+              "BOARD_SLIMEVR_LEGACY",
+              "BOARD_CUSTOM",
               "BOARD_NODEMCU",
               "BOARD_WROOM32",
               "BOARD_WEMOSD1MINI",
               "BOARD_TTGO_TBASE",
-              "BOARD_ESP01"
+              "BOARD_ESP01",
+              "BOARD_LOLIN_C3_MINI",
+              "BOARD_BEETLE32C32",
+              "BOARD_ES32C3DEVKITM1"
             ]
           },
           "ledPin": {
@@ -660,6 +675,12 @@
             "x-typia-required": true,
             "x-typia-optional": false,
             "type": "string"
+          },
+          "optional": {
+            "description": "Is this imu optionnal\nAllows for extensions to be unplugged",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "boolean"
           }
         },
         "nullable": false,
@@ -668,7 +689,8 @@
           "rotation",
           "intPin",
           "sclPin",
-          "sdaPin"
+          "sdaPin",
+          "optional"
         ],
         "x-typia-jsDocTags": []
       },
@@ -778,6 +800,12 @@
             "x-typia-optional": false,
             "type": "number"
           },
+          "isFirmware": {
+            "description": "Is this file the main firmware",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "boolean"
+          },
           "firmwareId": {
             "description": "Id of the linked firmware",
             "x-typia-jsDocTags": [
@@ -811,6 +839,7 @@
         "required": [
           "url",
           "offset",
+          "isFirmware",
           "firmwareId"
         ],
         "x-typia-jsDocTags": []
@@ -971,13 +1000,20 @@
             "x-typia-required": true,
             "x-typia-optional": false,
             "type": "string"
+          },
+          "optional": {
+            "description": "Is this imu optionnal\nAllows for extensions to be unplugged",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "boolean"
           }
         },
         "nullable": false,
         "required": [
           "intPin",
           "sclPin",
-          "sdaPin"
+          "sdaPin",
+          "optional"
         ],
         "x-typia-jsDocTags": []
       },
@@ -1289,11 +1325,16 @@
         "enum": [
           "BOARD_SLIMEVR",
           "BOARD_SLIMEVR_DEV",
+          "BOARD_SLIMEVR_LEGACY",
+          "BOARD_CUSTOM",
           "BOARD_NODEMCU",
           "BOARD_WROOM32",
           "BOARD_WEMOSD1MINI",
           "BOARD_TTGO_TBASE",
-          "BOARD_ESP01"
+          "BOARD_ESP01",
+          "BOARD_LOLIN_C3_MINI",
+          "BOARD_BEETLE32C32",
+          "BOARD_ES32C3DEVKITM1"
         ]
       },
       "BatteryType": {
@@ -1364,6 +1405,12 @@
             "x-typia-optional": false,
             "type": "string"
           },
+          "optional": {
+            "description": "Is this imu optionnal\nAllows for extensions to be unplugged",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "boolean"
+          },
           "firmwareId": {
             "description": "id of the linked firmware, used for relations",
             "x-typia-jsDocTags": [
@@ -1401,6 +1448,7 @@
           "intPin",
           "sclPin",
           "sdaPin",
+          "optional",
           "firmwareId"
         ],
         "x-typia-jsDocTags": []

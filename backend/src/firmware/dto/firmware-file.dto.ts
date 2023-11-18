@@ -12,6 +12,11 @@ export class FirmwareFileDTO implements FirmwareFile {
   offset!: number;
 
   /**
+   * Is this file the main firmware
+   */
+  isFirmware!: boolean;
+
+  /**
    * Id of the linked firmware
    *
    * @format uuid

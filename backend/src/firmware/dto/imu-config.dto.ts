@@ -38,6 +38,12 @@ export class ImuConfigDTO implements ImuConfig {
   sdaPin: string;
 
   /**
+   * Is this imu optionnal
+   * Allows for extensions to be unplugged
+   */
+  optional: boolean;
+
+  /**
    * id of the linked firmware, used for relations
    *
    * @format uuid

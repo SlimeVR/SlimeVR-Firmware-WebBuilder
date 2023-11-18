@@ -16,12 +16,14 @@
             {
                 "sdaPin": "14",
                 "sclPin": "12",
-                "intPin": "16"
+                "intPin": "16",
+                "optional": false
             },
             {
                 "sdaPin": "14",
                 "sclPin": "12",
-                "intPin": "13"
+                "intPin": "13",
+                "optional": true
             }
         ]
     },
@@ -42,12 +44,14 @@
             {
                 "sdaPin": "4",
                 "sclPin": "5",
-                "intPin": "10"
+                "intPin": "10",
+                "optional": false
             },
             {
                 "sdaPin": "4",
                 "sclPin": "5",
-                "intPin": "13"
+                "intPin": "13",
+                "optional": true
             }
         ]
     },
@@ -68,12 +72,14 @@
             {
                 "sdaPin": "D2",
                 "sclPin": "D1",
-                "intPin": "D5"
+                "intPin": "D5",
+                "optional": false
             },
             {
                 "sdaPin": "D2",
                 "sclPin": "D1",
-                "intPin": "D6"
+                "intPin": "D6",
+                "optional": true
             }
         ]
     },
@@ -94,12 +100,14 @@
             {
                 "sdaPin": "D2",
                 "sclPin": "D1",
-                "intPin": "D5"
+                "intPin": "D5",
+                "optional": false
             },
             {
                 "sdaPin": "D2",
                 "sclPin": "D1",
-                "intPin": "D6"
+                "intPin": "D6",
+                "optional": true
             }
         ]
     },
@@ -120,12 +128,14 @@
             {
                 "sdaPin": "4",
                 "sclPin": "5",
-                "intPin": "14"
+                "intPin": "14",
+                "optional": false
             },
             {
                 "sdaPin": "4",
                 "sclPin": "5",
-                "intPin": "13"
+                "intPin": "13",
+                "optional": true
             }
         ]
     },
@@ -146,12 +156,14 @@
             {
                 "sdaPin": "2",
                 "sclPin": "0",
-                "intPin": "23"
+                "intPin": "23",
+                "optional": false
             },
             {
                 "sdaPin": "2",
                 "sclPin": "0",
-                "intPin": "25"
+                "intPin": "25",
+                "optional": true
             }
         ]
     },
@@ -172,12 +184,14 @@
             {
                 "sdaPin": "2",
                 "sclPin": "0",
-                "intPin": "255"
+                "intPin": "255",
+                "optional": false
             },
             {
                 "sdaPin": "2",
                 "sclPin": "0",
-                "intPin": "255"
+                "intPin": "255",
+                "optional": true
             }
         ]
     }

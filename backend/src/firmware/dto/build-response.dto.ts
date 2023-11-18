@@ -1,7 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
 import { BuildStatus } from '@prisma/client';
 import { FirmwareFileDTO } from './firmware-file.dto';
-import { IsString } from 'class-validator';
 
 export class BuildResponseDTO {
   /**
@@ -31,21 +29,5 @@ export class BuildResponseDTO {
     this.id = id;
     this.status = status;
     this.firmwareFiles = firmwareFiles;
-  }
-}
-
-export class BuildStatusMessage extends BuildResponseDTO {
-  @ApiProperty({ required: true })
-  @IsString()
-  message: string;
-
-  constructor(
-    id: string,
-    status: BuildStatus,
-    message: string,
-    firmwareFiles: FirmwareFileDTO[] | undefined = undefined,
-  ) {
-    super(id, status, firmwareFiles);
-    this.message = message;
   }
 }

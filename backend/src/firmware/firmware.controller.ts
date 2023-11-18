@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { ReleaseDTO } from 'src/github/dto/release.dto';
-import { BuildResponseDTO, BuildStatusMessage } from './dto/build-response.dto';
+import { BuildResponseDTO } from './dto/build-response.dto';
 import { IMUDTO, IMUS } from './dto/imu.dto';
 import {
   VersionNotFoundError,
@@ -73,7 +73,7 @@ export class FirmwareController {
   @Header('Cache-Control', 'no-cache')
   buildStatus(
     @TypedParam('id') id: string,
-  ): Observable<{ data: BuildStatusMessage }> {
+  ): Observable<{ data: BuildResponseDTO }> {
     return this.firmwareBuilderService.getBuildStatusSubject(id);
   }
 
@@ -83,7 +83,8 @@ export class FirmwareController {
   @TypedRoute.Get('/boards')
   @Header('Cache-Control', 'public, max-age=7200')
   getBoardsTypes(): string[] {
-    return Object.keys(BoardType);
+    // only list the boards that have config
+    return Object.keys(BoardType).filter((board) => AVAILABLE_BOARDS[board]);
   }
 
   /**

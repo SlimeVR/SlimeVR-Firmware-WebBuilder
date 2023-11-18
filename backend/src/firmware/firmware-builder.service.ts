@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { CreateBuildFirmwareDTO } from './dto/build-firmware.dto';
-import { BuildResponseDTO, BuildStatusMessage } from './dto/build-response.dto';
+import { BuildResponseDTO } from './dto/build-response.dto';
 import { AVAILABLE_FIRMWARE_REPOS } from './firmware.constants';
 import { GithubService } from 'src/github/github.service';
 import { PrismaService } from 'src/commons/prisma/prisma.service';
@@ -29,7 +29,7 @@ import { IMUS } from './dto/imu.dto';
 
 @Injectable()
 export class FirmwareBuilderService {
-  private readonly buildStatusSubject = new Subject<BuildStatusMessage>();
+  private readonly buildStatusSubject = new Subject<BuildResponseDTO>();
 
   constructor(
     @Inject(APP_CONFIG) private appConfig: ConfigService,
@@ -52,12 +52,15 @@ export class FirmwareBuilderService {
     /**
      * Define of one imu entry, computes the address
      */
-    const imuDesc = (imuConfig, index) => {
+    const imuDesc = (imuConfig: ImuConfig, index: number) => {
       const imu = IMUS.find(({ type }) => type === imuConfig.type);
-      if (!imu)
-        return null;
+      if (!imu) return null;
 
-      return `IMU_DESC_ENTRY(${imuConfig.type}, ${(imu.imuStartAddress) + index * (imu.addressIncrement)}, ${rotationToFirmware(imuConfig.rotation)}, ${imuConfig.sclPin}, ${imuConfig.sdaPin}, ${imuConfig.intPin || 255})`;
+      return `IMU_DESC_ENTRY(${imuConfig.type}, ${
+        imu.imuStartAddress + index * imu.addressIncrement
+      }, ${rotationToFirmware(imuConfig.rotation)}, ${imuConfig.sclPin}, ${
+        imuConfig.sdaPin
+      }, ${imuConfig.optional}, ${imuConfig.intPin || 255})`;
     };
 
     // this is to deal with old firmware versions where two imus where always declared
@@ -75,7 +78,10 @@ export class FirmwareBuilderService {
 
           #ifndef IMU_DESC_LIST
           #define IMU_DESC_LIST \\
-                ${imusConfig.map(imuDesc).filter(imu => !!imu).join(' \\\n\t\t ')}
+                ${imusConfig
+                  .map(imuDesc)
+                  .filter((imu) => !!imu)
+                  .join(' \\\n\t\t ')}
           #endif
 
           #define BATTERY_MONITOR ${boardConfig.batteryType}
@@ -132,7 +138,7 @@ export class FirmwareBuilderService {
       const firmware = await this.prisma.firmware.findFirst({
         where: {
           releaseId: release.id,
-          buildStatus: { not: 'FAILED' },
+          buildStatus: { not: 'ERROR' },
           boardConfig: {
             ...dto.boardConfig,
             batteryResistances: {
@@ -151,20 +157,18 @@ export class FirmwareBuilderService {
 
       // If we found a firmware that match the config, we just return it without building again
       if (firmware) {
-        if (firmware.buildStatus === BuildStatus.BUILDING) {
-          return new BuildResponseDTO(firmware.id, firmware.buildStatus);
+        switch (firmware.buildStatus) {
+          case BuildStatus.DONE: {
+            return new BuildResponseDTO(
+              firmware.id,
+              firmware.buildStatus,
+              firmware.firmwareFiles,
+            );
+          }
+          default: {
+            return new BuildResponseDTO(firmware.id, firmware.buildStatus);
+          }
         }
-
-        if (firmware.buildStatus === BuildStatus.DONE) {
-          return new BuildResponseDTO(
-            firmware.id,
-            firmware.buildStatus,
-            firmware.firmwareFiles,
-          );
-        }
-
-        // We probably should to better error messages here
-        throw new VersionNotFoundExeption();
       } else {
         const newFirmware = await this.prisma.firmware.create({
           data: {
@@ -207,13 +211,10 @@ export class FirmwareBuilderService {
     let tmpDir;
 
     try {
-      this.buildStatusSubject.next(
-        new BuildStatusMessage(
-          firmware.id,
-          BuildStatus.BUILDING,
-          'Creating temporary build folder',
-        ),
-      );
+      this.buildStatusSubject.next({
+        id: firmware.id,
+        status: BuildStatus.CREATING_BUILD_FOLDER,
+      });
 
       tmpDir = await mkdtemp(path.join(os.tmpdir(), 'slimevr-api'));
 
@@ -233,23 +234,17 @@ export class FirmwareBuilderService {
         });
       };
 
-      this.buildStatusSubject.next(
-        new BuildStatusMessage(
-          firmware.id,
-          BuildStatus.BUILDING,
-          'Downloading SlimeVR firmware from Github',
-        ),
-      );
+      this.buildStatusSubject.next({
+        id: firmware.id,
+        status: BuildStatus.DOWNLOADING_FIRMWARE,
+      });
 
       await downloadFile(release.zipball_url, releaseFilePath);
 
-      this.buildStatusSubject.next(
-        new BuildStatusMessage(
-          firmware.id,
-          BuildStatus.BUILDING,
-          'Extracting firmware',
-        ),
-      );
+      this.buildStatusSubject.next({
+        id: firmware.id,
+        status: BuildStatus.EXTRACTING_FIRMWARE,
+      });
 
       const releaseFolderPath = path.join(tmpDir, `release-${release.name}`);
       const zip = new AdmZip(releaseFilePath);
@@ -260,13 +255,10 @@ export class FirmwareBuilderService {
         resolve(true);
       });
 
-      this.buildStatusSubject.next(
-        new BuildStatusMessage(
-          firmware.id,
-          BuildStatus.BUILDING,
-          'Setting up defines and configs',
-        ),
-      );
+      this.buildStatusSubject.next({
+        id: firmware.id,
+        status: BuildStatus.SETTING_UP_DEFINES,
+      });
 
       const [root] = await readdir(releaseFolderPath);
       const rootFoler = path.join(releaseFolderPath, root);
@@ -288,13 +280,10 @@ export class FirmwareBuilderService {
 
       console.log(res);
 
-      this.buildStatusSubject.next(
-        new BuildStatusMessage(
-          firmware.id,
-          BuildStatus.BUILDING,
-          'Building Firmware (this might take a minute)',
-        ),
-      );
+      this.buildStatusSubject.next({
+        id: firmware.id,
+        status: BuildStatus.BUILDING,
+      });
 
       await new Promise((resolve, reject) => {
         if (!firmware.boardConfig) {
@@ -321,13 +310,10 @@ export class FirmwareBuilderService {
             );
 
           console.log('[BUILD LOG]', `[${firmware.id}]`, data.toString());
-          this.buildStatusSubject.next(
-            new BuildStatusMessage(
-              firmware.id,
-              BuildStatus.BUILDING,
-              'Building Firmware (this might take a minute)',
-            ),
-          );
+          this.buildStatusSubject.next({
+            id: firmware.id,
+            status: BuildStatus.BUILDING,
+          });
         });
 
         platformioRun.stderr?.on('data', (data) => {
@@ -346,18 +332,17 @@ export class FirmwareBuilderService {
         });
       });
 
-      this.buildStatusSubject.next(
-        new BuildStatusMessage(
-          firmware.id,
-          BuildStatus.BUILDING,
-          'Uploading Firmware to Bucket',
-        ),
-      );
+      this.buildStatusSubject.next({
+        id: firmware.id,
+        status: BuildStatus.SAVING,
+      });
 
       const files = await this.getPartitions(
         firmware.boardConfig.type,
         rootFoler,
       );
+
+      console.log(files);
 
       await Promise.all(
         files.map(async ({ path }, index) =>
@@ -369,8 +354,9 @@ export class FirmwareBuilderService {
         ),
       );
 
-      const firmwareFiles = files.map(({ offset }, index) => ({
+      const firmwareFiles = files.map(({ offset, isFirmware }, index) => ({
         offset,
+        isFirmware,
         url: `${this.appConfig.getBuildsBucket()}/${
           firmware.id
         }/firmware-part-${index}.bin`,
@@ -387,29 +373,23 @@ export class FirmwareBuilderService {
         },
       });
 
-      this.buildStatusSubject.next(
-        new BuildStatusMessage(
-          firmware.id,
-          BuildStatus.DONE,
-          'Build complete',
-          firmwareFiles.map((file) => ({
-            ...file,
-            firmwareId: firmware.id,
-          })),
-        ),
-      );
+      this.buildStatusSubject.next({
+        id: firmware.id,
+        status: BuildStatus.DONE,
+        firmwareFiles: firmwareFiles.map((file) => ({
+          ...file,
+          firmwareId: firmware.id,
+        })),
+      });
     } catch (e) {
       console.log(e);
-      this.buildStatusSubject.next(
-        new BuildStatusMessage(
-          firmware.id,
-          BuildStatus.FAILED,
-          `Build failed: ${e.message || e}`,
-        ),
-      );
+      this.buildStatusSubject.next({
+        id: firmware.id,
+        status: BuildStatus.ERROR,
+      });
       await this.prisma.firmware.update({
         where: { id: firmware.id },
-        data: { buildStatus: BuildStatus.FAILED },
+        data: { buildStatus: BuildStatus.ERROR },
       });
     } finally {
       try {
@@ -442,7 +422,7 @@ export class FirmwareBuilderService {
   private async getPartitions(
     boardType: BoardType,
     rootFoler: string,
-  ): Promise<{ path: string; offset: number }[]> {
+  ): Promise<{ path: string; offset: number; isFirmware: boolean }[]> {
     const ideInfos = (await new Promise((resolve) => {
       const metadata = execSync(
         `platformio project metadata --json-output -e ${boardType}`,
@@ -451,23 +431,28 @@ export class FirmwareBuilderService {
           shell: '/bin/bash',
         },
       );
+      console.log(metadata.toString());
       resolve(JSON.parse(metadata.toString()));
     })) as {
       [key: string]: {
         extra: {
           flash_images: { offset: string; path: string }[];
-          application_offset: string;
+          application_offset?: string;
         };
       };
     };
-
     return [
       ...ideInfos[boardType].extra.flash_images.map(
-        ({ offset, ...fields }) => ({ offset: parseInt(offset), ...fields }),
+        ({ offset, ...fields }) => ({
+          offset: parseInt(offset),
+          isFirmware: false,
+          ...fields,
+        }),
       ),
       {
         path: join(rootFoler, `.pio/build/${boardType}/firmware.bin`),
-        offset: parseInt(ideInfos[boardType].extra.application_offset),
+        offset: parseInt(ideInfos[boardType].extra.application_offset ?? '0'),
+        isFirmware: true,
       },
     ];
   }
