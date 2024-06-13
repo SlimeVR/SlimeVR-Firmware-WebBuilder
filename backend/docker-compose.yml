@@ -4,9 +4,9 @@ services:
     image: "postgres"
     restart: always
     environment:
-      POSTGRES_USER: slimevr
-      POSTGRES_PASSWORD: 123456
-      POSTGRES_DB: slimevr
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DATABASE}
     ports:
       - 5432:5432
     volumes:
@@ -47,7 +47,7 @@ services:
       GITHUB_AUTH: ${GITHUB_AUTH}
       HOST_URL: ${HOST_URL}
       HOST_S3_URL: ${HOST_S3_URL}
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DATABASE}
   slimevr-api-s3:
     image: minio/minio:latest
     ports:
