@@ -54,10 +54,12 @@ export class ConfigService {
       region: 'us-east-1',
       endpoint: this.getS3Endpoint(),
       credentials: {
-        accessKeyId: (await readFile('/run/secrets/access_key', 'utf8')).trim(),
-        secretAccessKey: (
-          await readFile('/run/secrets/secret_key', 'utf8')
-        ).trim(),
+        accessKeyId: (await readFile('/run/secrets/access_key'))
+          .toString()
+          .trim(),
+        secretAccessKey: (await readFile('/run/secrets/secret_key'))
+          .toString()
+          .trim(),
       },
       forcePathStyle: true,
     };
