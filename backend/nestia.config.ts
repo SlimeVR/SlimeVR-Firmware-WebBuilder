@@ -14,6 +14,7 @@ const config: INestiaConfig = {
         description: 'Main Server',
       },
     ],
+    openapi: '3.0',
     operationId: ({ path, method }) =>
       `${method.toLowerCase()}_${path.substring(1).replace(/\/|-|{|}/gi, '_')}`
         .split('_')

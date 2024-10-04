@@ -42,10 +42,11 @@
     "reflect-metadata": "^0.1.14",
     "rimraf": "^3.0.2",
     "rxjs": "^7.8.1",
+    "semver": "^7.6.3",
     "swagger-ui-express": "^4.6.3",
+    "ts-patch": "^3.2.1",
     "typia": "^6.4.3",
-    "universal-base64url": "^1.1.0",
-    "ts-patch": "^3.2.1"
+    "universal-base64url": "^1.1.0"
   },
   "devDependencies": {
     "@nestia/sdk": "^3.4.0",
