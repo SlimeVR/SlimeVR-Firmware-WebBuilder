@@ -21,8 +21,6 @@ import { mkdtemp, readdir, readFile, rename, rm, writeFile } from 'fs/promises';
 import path, { join } from 'path';
 import os from 'os';
 import AdmZip from 'adm-zip';
-import fs from 'fs';
-import fetch from 'node-fetch';
 import { exec, execSync } from 'child_process';
 import { APP_CONFIG, ConfigService } from 'src/config/config.service';
 import { BoardConfigDTO } from './dto/board-config.dto';
@@ -227,15 +225,10 @@ export class FirmwareBuilderService {
       )}.zip`;
       const releaseFilePath = path.join(tmpDir, releaseFileName);
 
-      const downloadFile = async (url: string, path: string) => {
-        const res = await fetch(url);
-        const fileStream = fs.createWriteStream(path);
-        await new Promise((resolve, reject) => {
-          res.body.pipe(fileStream);
-          res.body.on('error', reject);
-          fileStream.on('finish', resolve);
-        });
-      };
+      const downloadFile = async (url: string, path: string) =>
+        fetch(url)
+          .then((x) => x.arrayBuffer())
+          .then((x) => writeFile(path, Buffer.from(x)));
 
       this.buildStatusSubject.next({
         id: firmware.id,

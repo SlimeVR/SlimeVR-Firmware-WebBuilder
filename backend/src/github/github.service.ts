@@ -116,6 +116,7 @@ export class GithubService {
                   'SlimeVR/v0.2.0',
                   'SlimeVR/v0.2.1',
                   'SlimeVR/v0.2.2',
+                  'SlimeVR/v0.2.3',
                 ].includes(name),
             ),
         ];

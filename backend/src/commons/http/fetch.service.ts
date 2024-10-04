@@ -1,6 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { FetchModuleConfig } from './fetch.module';
-import fetch, { RequestInit, Response } from 'node-fetch';
 import { URL } from 'url';
 import { FETCH_CONFIG } from './fetch.constants';
 
