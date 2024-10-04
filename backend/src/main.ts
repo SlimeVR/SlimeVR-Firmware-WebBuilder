@@ -12,9 +12,17 @@ async function bootstrap() {
     cors: true,
   });
 
-  SwaggerModule.setup('api', app, swaggerDocument as OpenAPIObject, {
+  const openApiDoc = swaggerDocument as OpenAPIObject;
+
+  openApiDoc.servers = [];
+
+  SwaggerModule.setup('api', app, openApiDoc, {
     swaggerOptions: {
       defaultModelRendering: 'model',
+      tryItOutEnabled: true,
+      syntaxHighlight: {
+        activate: true,
+      },
     },
   });
   await app.listen(3000);
