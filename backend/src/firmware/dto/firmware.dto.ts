@@ -9,7 +9,7 @@ import { FirmwareFileDTO } from './firmware-file.dto';
  *  - the status of the build
  *  - the the repository and commit used as source
  */
-export class FirmwareDTO implements Firmware {
+export interface FirmwareDTO extends Firmware {
   /**
    * UUID of the firmware
    *
@@ -30,7 +30,7 @@ export class FirmwareDTO implements Firmware {
    * process
    *
    * BUILDING -> DONE \\ the firmwrare is build and ready
-   *          -> FAILED  \\ the build failled and be garbage collected
+   *          -> FAILED  \\ the build failled and will be garbage collected
    */
   buildStatus: BuildStatus;
 
@@ -45,18 +45,14 @@ export class FirmwareDTO implements Firmware {
   createdAt: Date;
 }
 
-export class FirmwareDetailDTO
-  extends FirmwareDTO
-
-  // this is so we only document the added fields without having duplicates
-  implements
+export interface FirmwareDetailDTO
+  extends FirmwareDTO,
     Omit<
       Prisma.FirmwareGetPayload<{
         include: { boardConfig: true; imusConfig: true; firmwareFiles: true };
       }>,
       keyof FirmwareDTO
-    >
-{
+    > {
   /**
    * Pins informations about the board
    */

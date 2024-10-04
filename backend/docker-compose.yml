@@ -1,7 +1,6 @@
-version: '3'
 services:
   slimevr-database:
-    image: "postgres"
+    image: 'postgres'
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -17,9 +16,9 @@ services:
     build:
       context: .
     logging:
-      driver: "json-file"
+      driver: 'json-file'
       options:
-        max-size: "50m"
+        max-size: '50m'
     ports:
       - 3000:3000
     depends_on:
@@ -47,7 +46,7 @@ services:
       GITHUB_AUTH: ${GITHUB_AUTH}
       HOST_URL: ${HOST_URL}
       HOST_S3_URL: ${HOST_S3_URL}
-      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DATABASE}"
+      DATABASE_URL: 'postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DATABASE}'
   slimevr-api-s3:
     image: minio/minio:latest
     ports:

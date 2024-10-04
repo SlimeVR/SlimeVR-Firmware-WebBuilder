@@ -68,25 +68,25 @@ export const IMUS: IMUDTO[] = [
   },
 ];
 
-export class IMUDTO {
+export interface IMUDTO {
   /**
    * Type of the imu
    * @see {ImuType}
    */
-  public type: ImuType;
+  type: ImuType;
 
   /**
    * Does that imu type require a int pin
    */
-  public hasIntPin: boolean;
+  hasIntPin: boolean;
 
   /**
    * First address of the imu
    */
-  public imuStartAddress: number;
+  imuStartAddress: number;
 
   /**
    * Increment of the address for each new imus
    */
-  public addressIncrement: number;
+  addressIncrement: number;
 }

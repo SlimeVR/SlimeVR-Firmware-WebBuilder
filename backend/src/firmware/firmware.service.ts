@@ -121,11 +121,9 @@ export class FirmwareService implements OnApplicationBootstrap {
     repo = 'SlimeVR-Tracker-ESP',
     branch = 'main',
   ): Promise<void> {
-    const branchRelease = await this.githubService.getRelease(
-      owner,
-      repo,
-      branch,
-    );
+    const branchRelease = await this.githubService
+      .getRelease(owner, repo, branch)
+      .catch((e) => console.log(e));
 
     if (!branchRelease) return;
 

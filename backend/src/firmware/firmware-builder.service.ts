@@ -1,7 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { CreateBuildFirmwareDTO } from './dto/build-firmware.dto';
 import { BuildResponseDTO } from './dto/build-response.dto';
-import { AVAILABLE_FIRMWARE_REPOS } from './firmware.constants';
+import {
+  AVAILABLE_BOARDS,
+  AVAILABLE_FIRMWARE_REPOS,
+} from './firmware.constants';
 import { GithubService } from 'src/github/github.service';
 import { PrismaService } from 'src/commons/prisma/prisma.service';
 import {
@@ -42,7 +45,7 @@ export class FirmwareBuilderService {
    * Returns the content of the define.h based on the board config and imus config
    */
   public getDefines(boardConfig: BoardConfigDTO, imusConfig: ImuConfig[]) {
-    const rotationToFirmware = function (rotation: number): number {
+    const rotationToFirmware = (rotation: number): number => {
       // Reduce the angle to its lowest equivalent form,
       // negate it to match the firmware rotation direction,
       // then convert it to radians
@@ -268,17 +271,12 @@ export class FirmwareBuilderService {
         firmware.imusConfig,
       );
       console.log(definesContent);
-      const res = await Promise.all([
-        writeFile(path.join(rootFoler, 'src', 'defines.h'), definesContent),
-      ]);
-
+      await writeFile(path.join(rootFoler, 'src', 'defines.h'), definesContent);
       await rm(join(rootFoler, 'platformio.ini'));
       await rename(
         join(rootFoler, 'platformio-tools.ini'),
         join(rootFoler, 'platformio.ini'),
       );
-
-      console.log(res);
 
       this.buildStatusSubject.next({
         id: firmware.id,
@@ -451,7 +449,7 @@ export class FirmwareBuilderService {
       ),
       {
         path: join(rootFoler, `.pio/build/${boardType}/firmware.bin`),
-        offset: parseInt(ideInfos[boardType].extra.application_offset ?? '0'),
+        offset: AVAILABLE_BOARDS[boardType].application_offset,
         isFirmware: true,
       },
     ];

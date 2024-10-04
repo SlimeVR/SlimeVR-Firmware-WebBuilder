@@ -89,8 +89,6 @@ export class ConfigService {
 const configService = new ConfigService(process.env).ensureValues([
   'APP_ENV',
   'DATABASE_URL',
-  'S3_ACCESS_KEY',
-  'S3_SECRET_KEY',
   'S3_ENDPOINT',
   'S3_BUILDS_BUCKET',
   'GITHUB_AUTH',

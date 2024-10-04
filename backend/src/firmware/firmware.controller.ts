@@ -122,15 +122,15 @@ export class FirmwareController {
   getDefaultConfig(
     @TypedParam('board') board: BoardType,
   ): DefaultBuildConfigDTO {
-    const buildConfig = new DefaultBuildConfigDTO();
-    buildConfig.boardConfig = {
-      ...AVAILABLE_BOARDS[board].defaults,
-      batteryType: AVAILABLE_BOARDS[board].defaults.batteryType as BatteryType, // oof
-      type: board,
+    return {
+      ...AVAILABLE_BOARDS[board],
+      boardConfig: {
+        ...AVAILABLE_BOARDS[board].boardConfig,
+        batteryType: AVAILABLE_BOARDS[board].boardConfig
+          .batteryType as BatteryType, // oof
+        type: board,
+      },
     };
-    buildConfig.imuPins = AVAILABLE_BOARDS[board].imuPins;
-
-    return buildConfig;
   }
 
   /**

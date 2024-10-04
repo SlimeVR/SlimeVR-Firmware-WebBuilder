@@ -221,16 +221,13 @@
               "type": "string",
               "enum": [
                 "BOARD_SLIMEVR",
-                "BOARD_SLIMEVR_DEV",
-                "BOARD_SLIMEVR_LEGACY",
-                "BOARD_CUSTOM",
                 "BOARD_NODEMCU",
                 "BOARD_WROOM32",
                 "BOARD_WEMOSD1MINI",
                 "BOARD_TTGO_TBASE",
                 "BOARD_ESP01",
                 "BOARD_LOLIN_C3_MINI",
-                "BOARD_BEETLE32C32",
+                "BOARD_BEETLE32C3",
                 "BOARD_ES32C3DEVKITM1"
               ]
             },
@@ -492,16 +489,13 @@
             "type": "string",
             "enum": [
               "BOARD_SLIMEVR",
-              "BOARD_SLIMEVR_DEV",
-              "BOARD_SLIMEVR_LEGACY",
-              "BOARD_CUSTOM",
               "BOARD_NODEMCU",
               "BOARD_WROOM32",
               "BOARD_WEMOSD1MINI",
               "BOARD_TTGO_TBASE",
               "BOARD_ESP01",
               "BOARD_LOLIN_C3_MINI",
-              "BOARD_BEETLE32C32",
+              "BOARD_BEETLE32C3",
               "BOARD_ES32C3DEVKITM1"
             ]
           },
@@ -950,7 +944,25 @@
           "boardConfig": {
             "$ref": "#/components/schemas/CreateBoardConfigDTO"
           },
-          "imuPins": {
+          "needBootPress": {
+            "description": "Inform the flashing utility that the user need to press the boot (or Flash) button\non the tracker",
+            "x-typia-required": false,
+            "x-typia-optional": true,
+            "type": "boolean"
+          },
+          "needManualReboot": {
+            "description": "Inform the flashing utility that the board will need a reboot after\nbeing flashed",
+            "x-typia-required": false,
+            "x-typia-optional": true,
+            "type": "boolean"
+          },
+          "shouldOnlyUseDefaults": {
+            "description": "Will use the default values and skip the customisation options",
+            "x-typia-required": false,
+            "x-typia-optional": true,
+            "type": "boolean"
+          },
+          "imuDefaults": {
             "description": "List of the possible imus pins, usually only two items will be sent",
             "x-typia-jsDocTags": [
               {
@@ -967,21 +979,63 @@
             "x-typia-optional": false,
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/IMUDefaultPinsDTO"
+              "$ref": "#/components/schemas/IMUDefaultDTO"
             },
             "minItems": 1
+          },
+          "application_offset": {
+            "description": "Gives the offset of the firmare file in the eeprom. Used for flashing",
+            "x-typia-required": true,
+            "x-typia-optional": false,
+            "type": "number"
           }
         },
         "nullable": false,
         "required": [
           "boardConfig",
-          "imuPins"
+          "imuDefaults",
+          "application_offset"
         ],
         "x-typia-jsDocTags": []
       },
-      "IMUDefaultPinsDTO": {
+      "IMUDefaultDTO": {
         "type": "object",
         "properties": {
+          "type": {
+            "description": "Type of the imu",
+            "x-typia-jsDocTags": [
+              {
+                "name": "see",
+                "text": [
+                  {
+                    "text": "{ImuType}",
+                    "kind": "text"
+                  }
+                ]
+              }
+            ],
+            "x-typia-required": false,
+            "x-typia-optional": false,
+            "type": "string",
+            "enum": [
+              "IMU_MPU9250",
+              "IMU_MPU6500",
+              "IMU_BNO080",
+              "IMU_BNO085",
+              "IMU_BNO055",
+              "IMU_BNO086",
+              "IMU_MPU6050",
+              "IMU_BMI160",
+              "IMU_ICM20948",
+              "IMU_BMI270"
+            ]
+          },
+          "rotation": {
+            "description": "Rotation of the imu in degrees",
+            "x-typia-required": false,
+            "x-typia-optional": false,
+            "type": "number"
+          },
           "intPin": {
             "description": "Pin address of the imu int pin\nnot all imus use it",
             "x-typia-required": true,
@@ -1324,16 +1378,13 @@
         "type": "string",
         "enum": [
           "BOARD_SLIMEVR",
-          "BOARD_SLIMEVR_DEV",
-          "BOARD_SLIMEVR_LEGACY",
-          "BOARD_CUSTOM",
           "BOARD_NODEMCU",
           "BOARD_WROOM32",
           "BOARD_WEMOSD1MINI",
           "BOARD_TTGO_TBASE",
           "BOARD_ESP01",
           "BOARD_LOLIN_C3_MINI",
-          "BOARD_BEETLE32C32",
+          "BOARD_BEETLE32C3",
           "BOARD_ES32C3DEVKITM1"
         ]
       },

@@ -1,4 +1,4 @@
-export class GithubRepositoryDTO {
+export interface GithubRepositoryDTO {
   /**
    * id of the github repository
    */

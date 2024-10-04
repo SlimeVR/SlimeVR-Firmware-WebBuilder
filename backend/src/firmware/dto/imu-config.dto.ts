@@ -1,7 +1,6 @@
-import { OmitType } from '@nestjs/swagger';
 import { ImuConfig, ImuType } from '@prisma/client';
 
-export class ImuConfigDTO implements ImuConfig {
+export interface ImuConfigDTO extends ImuConfig {
   /**
    * Unique id of the config
    * this probably will never be shown to the user as it is moslty use for relations
@@ -51,14 +50,12 @@ export class ImuConfigDTO implements ImuConfig {
   firmwareId: string;
 }
 
-export class CreateImuConfigDTO extends OmitType(ImuConfigDTO, [
-  'firmwareId',
-  'id',
-]) {}
+export type CreateImuConfigDTO = Omit<ImuConfigDTO, 'firmwareId' | 'id'>;
 
-export class IMUDefaultPinsDTO extends OmitType(ImuConfigDTO, [
-  'firmwareId',
-  'id',
-  'rotation',
-  'type',
-]) {}
+type MakeFieldsOptional<T, K extends keyof T> = Omit<T, K> &
+  Partial<Pick<T, K>>;
+
+export type IMUDefaultDTO = Omit<
+  MakeFieldsOptional<ImuConfigDTO, 'rotation' | 'type'>,
+  'firmwareId' | 'id'
+>;

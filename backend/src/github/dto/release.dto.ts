@@ -1,4 +1,4 @@
-export class ReleaseDTO {
+export interface ReleaseDTO {
   /**
    * id of the release, usually the commit id
    */

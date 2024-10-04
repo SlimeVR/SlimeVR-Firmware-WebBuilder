@@ -1,7 +1,6 @@
-import { OmitType } from '@nestjs/swagger';
 import { BatteryType, BoardConfig, BoardType } from '@prisma/client';
 
-export class BoardConfigDTO implements BoardConfig {
+export interface BoardConfigDTO extends BoardConfig {
   /**
    * Unique id of the board config, used for relations
    *
@@ -57,7 +56,5 @@ export class BoardConfigDTO implements BoardConfig {
   firmwareId: string;
 }
 
-export class CreateBoardConfigDTO extends OmitType(BoardConfigDTO, [
-  'id',
-  'firmwareId',
-]) {}
+export interface CreateBoardConfigDTO
+  extends Omit<BoardConfigDTO, 'id' | 'firmwareId'> {}

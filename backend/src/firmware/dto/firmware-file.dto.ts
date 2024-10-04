@@ -1,20 +1,20 @@
 import { FirmwareFile } from '@prisma/client';
 
-export class FirmwareFileDTO implements FirmwareFile {
+export interface FirmwareFileDTO extends FirmwareFile {
   /**
    * Url to the file
    */
-  url!: string;
+  url: string;
 
   /**
    * Address of the partition
    */
-  offset!: number;
+  offset: number;
 
   /**
    * Is this file the main firmware
    */
-  isFirmware!: boolean;
+  isFirmware: boolean;
 
   /**
    * Id of the linked firmware
