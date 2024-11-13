@@ -1,101 +1,238 @@
 {
-    "BOARD_SLIMEVR": {
-        "partitions": [
-            {
-                "path": ".pio/build/BOARD_SLIMEVR/firmware.bin",
-                "offset": 0
-            }
-        ],
-        "board": "esp12e"
+  "BOARD_SLIMEVR": {
+    "boardConfig": {
+      "ledPin": "2",
+      "enableLed": true,
+      "ledInverted": true,
+      "batteryPin": "17",
+      "batteryType": "BAT_EXTERNAL",
+      "batteryResistances": [0, 10, 40.2]
     },
-    "BOARD_SLIMEVR_DEV": {
-        "partitions": [
-            {
-                "path": ".pio/build/BOARD_SLIMEVR_DEV/firmware.bin",
-                "offset": 0
-            }
-        ],
-        "board": "esp12e"
+    "needBootPress": true,
+    "needManualReboot": true,
+    "shouldOnlyUseDefaults": true,
+    "imuDefaults": [
+      {
+        "sdaPin": "14",
+        "sclPin": "12",
+        "intPin": "16",
+        "optional": false,
+        "rotation": 270,
+        "type": "IMU_BNO085"
+      },
+      {
+        "sdaPin": "14",
+        "sclPin": "12",
+        "intPin": "13",
+        "optional": true,
+        "rotation": 270,
+        "type": "IMU_BNO085"
+      }
+    ],
+    "application_offset": 0
+  },
+  "BOARD_NODEMCU": {
+    "needBootPress": true,
+    "boardConfig": {
+      "ledPin": "2",
+      "enableLed": true,
+      "ledInverted": false,
+      "batteryPin": "A0",
+      "batteryType": "BAT_EXTERNAL",
+      "batteryResistances": [180, 100, 220]
     },
-    "BOARD_NODEMCU": {
-        "partitions": [
-            {
-                "path": ".pio/build/BOARD_NODEMCU/firmware.bin",
-                "offset": 0
-            }
-        ],
-        "board": "esp12e"
+    "imuDefaults": [
+      {
+        "sdaPin": "D2",
+        "sclPin": "D1",
+        "intPin": "D5",
+        "optional": false
+      },
+      {
+        "sdaPin": "D2",
+        "sclPin": "D1",
+        "intPin": "D6",
+        "optional": true
+      }
+    ],
+    "application_offset": 0
+  },
+  "BOARD_WEMOSD1MINI": {
+    "boardConfig": {
+      "ledPin": "2",
+      "enableLed": true,
+      "ledInverted": false,
+      "batteryPin": "A0",
+      "batteryType": "BAT_EXTERNAL",
+      "batteryResistances": [180, 100, 220]
     },
-    "BOARD_WEMOSD1MINI": {
-        "partitions": [
-            {
-                "path": ".pio/build/BOARD_WEMOSD1MINI/firmware.bin",
-                "offset": 0
-            }
-        ],
-        "board": "esp12e"
+    "imuDefaults": [
+      {
+        "sdaPin": "D2",
+        "sclPin": "D1",
+        "intPin": "D5",
+        "optional": false
+      },
+      {
+        "sdaPin": "D2",
+        "sclPin": "D1",
+        "intPin": "D6",
+        "optional": true
+      }
+    ],
+    "application_offset": 0
+  },
+  "BOARD_TTGO_TBASE": {
+    "boardConfig": {
+      "ledPin": "2",
+      "enableLed": true,
+      "ledInverted": false,
+      "batteryPin": "A0",
+      "batteryType": "BAT_EXTERNAL",
+      "batteryResistances": [180, 100, 220]
     },
-    "BOARD_TTGO_TBASE": {
-        "partitions": [
-            {
-                "path": "/root/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/bin/bootloader_dio_40m.bin",
-                "offset": 4096
-            },
-            {
-                "path": ".pio/build/BOARD_TTGO_TBASE/partitions.bin",
-                "offset": 32768
-            },
-            {
-                "path": "/root/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin",
-                "offset": 57344
-            },
-            {
-                "path": ".pio/build/BOARD_TTGO_TBASE/firmware.bin",
-                "offset": 65536
-            }
-        ],
-        "board": "esp12e"
+    "imuDefaults": [
+      {
+        "sdaPin": "4",
+        "sclPin": "5",
+        "intPin": "14",
+        "optional": false
+      },
+      {
+        "sdaPin": "4",
+        "sclPin": "5",
+        "intPin": "13",
+        "optional": true
+      }
+    ],
+    "application_offset": 0
+  },
+  "BOARD_WROOM32": {
+    "needBootPress": true,
+    "boardConfig": {
+      "ledPin": "2",
+      "enableLed": true,
+      "ledInverted": false,
+      "batteryPin": "36",
+      "batteryType": "BAT_EXTERNAL",
+      "batteryResistances": [180, 100, 220]
     },
-    "BOARD_WROOM32": {
-        "partitions": [
-            {
-                "path": "/root/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/bin/bootloader_dio_40m.bin",
-                "offset": 4096
-            },
-            {
-                "path": ".pio/build/BOARD_WROOM32/partitions.bin",
-                "offset": 32768
-            },
-            {
-                "path": "/root/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin",
-                "offset": 57344
-            },
-            {
-                "path": ".pio/build/BOARD_WROOM32/firmware.bin",
-                "offset": 65536
-            }
-        ],
-        "board": "esp32dev"
+    "imuDefaults": [
+      {
+        "sdaPin": "2",
+        "sclPin": "0",
+        "intPin": "23",
+        "optional": false
+      },
+      {
+        "sdaPin": "2",
+        "sclPin": "0",
+        "intPin": "25",
+        "optional": true
+      }
+    ],
+    "application_offset": 65536
+  },
+  "BOARD_ESP01": {
+    "needBootPress": false,
+    "boardConfig": {
+      "ledPin": "255",
+      "enableLed": false,
+      "ledInverted": false,
+      "batteryPin": "A0",
+      "batteryType": "BAT_EXTERNAL",
+      "batteryResistances": [180, 100, 220]
     },
-    "BOARD_ESP01": {
-        "partitions": [
-            {
-                "path": "/root/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/bin/bootloader_dio_40m.bin",
-                "offset": 4096
-            },
-            {
-                "path": ".pio/build/BOARD_ESP01/partitions.bin",
-                "offset": 32768
-            },
-            {
-                "path": "/root/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin",
-                "offset": 57344
-            },
-            {
-                "path": ".pio/build/BOARD_ESP01/firmware.bin",
-                "offset": 65536
-            }
-        ],
-        "board": "esp32dev"
-    }
+    "imuDefaults": [
+      {
+        "sdaPin": "2",
+        "sclPin": "0",
+        "intPin": "255",
+        "optional": false
+      },
+      {
+        "sdaPin": "2",
+        "sclPin": "0",
+        "intPin": "255",
+        "optional": true
+      }
+    ],
+    "application_offset": 65536
+  },
+  "BOARD_BEETLE32C3": {
+    "boardConfig": {
+      "ledPin": "10",
+      "enableLed": true,
+      "ledInverted": true,
+      "batteryPin": "3",
+      "batteryType": "BAT_EXTERNAL",
+      "batteryResistances": [0, 10, 40.2]
+    },
+    "imuDefaults": [
+      {
+        "sdaPin": "8",
+        "sclPin": "9",
+        "intPin": "6",
+        "optional": false
+      },
+      {
+        "sdaPin": "8",
+        "sclPin": "9",
+        "intPin": "7",
+        "optional": true
+      }
+    ],
+    "application_offset": 65536
+  },
+  "BOARD_ES32C3DEVKITM1": {
+    "needBootPress": true,
+    "boardConfig": {
+      "ledPin": "16",
+      "enableLed": true,
+      "ledInverted": true,
+      "batteryPin": "3",
+      "batteryType": "BAT_EXTERNAL",
+      "batteryResistances": [180, 100, 220]
+    },
+    "imuDefaults": [
+      {
+        "sdaPin": "5",
+        "sclPin": "4",
+        "intPin": "6",
+        "optional": false
+      },
+      {
+        "sdaPin": "5",
+        "sclPin": "4",
+        "intPin": "7",
+        "optional": true
+      }
+    ],
+    "application_offset": 65536
+  },
+  "BOARD_LOLIN_C3_MINI": {
+    "boardConfig": {
+      "ledPin": "7",
+      "enableLed": true,
+      "ledInverted": true,
+      "batteryPin": "3",
+      "batteryType": "BAT_EXTERNAL",
+      "batteryResistances": [180, 100, 220]
+    },
+    "imuDefaults": [
+      {
+        "sdaPin": "5",
+        "sclPin": "4",
+        "intPin": "6",
+        "optional": false
+      },
+      {
+        "sdaPin": "5",
+        "sclPin": "4",
+        "intPin": "8",
+        "optional": true
+      }
+    ],
+    "application_offset": 65536
+  }
 }

@@ -15,7 +15,7 @@
     "SlimeVR-Tracker-ESP-BMI160": ["v3dev", "v3dev-bmm"]
   },
   "unlogisch04": {
-    "SlimeVR-Tracker-ESP": ["feat_commitid"]
+    "SlimeVR-Tracker-ESP": ["upd_espidf_pioarduino"]
   },
   "ButterscotchV": {
     "SlimeVR-Tracker-ESP": ["mag-enabled-stable", "mag-enabled-main"]

@@ -1,6 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { FetchModuleConfig } from './fetch.module';
-import fetch, { RequestInit, Response } from 'node-fetch';
 import { URL } from 'url';
 import { FETCH_CONFIG } from './fetch.constants';
 
@@ -13,6 +12,12 @@ export interface FetchResponse<T> {
 export class FetchService {
   constructor(@Inject(FETCH_CONFIG) private fetchConfig: FetchModuleConfig) {}
 
+  /**
+   * Perform a fetch requests with to a specific path and http headers informations
+   * if the response payload is JSON it will parse it and return it as an object directly
+   *
+   * Warning this is not validating the response payload, you should do it yourself
+   */
   public async request<T>(
     url: string,
     options: RequestInit,
@@ -23,8 +28,8 @@ export class FetchService {
     });
 
     const data = response.headers
-      .get('Content-Type')
-      .includes('application/json')
+      ?.get('Content-Type')
+      ?.includes('application/json')
       ? ((await response.json()) as T)
       : ((await response.text()) as any);
 
@@ -36,6 +41,9 @@ export class FetchService {
     };
   }
 
+  /**
+   * Perform a post request
+   */
   public post<T>(
     url: string,
     params: { [key: string]: string },
@@ -48,6 +56,9 @@ export class FetchService {
     });
   }
 
+  /**
+   * Perform a put request
+   */
   public put<T>(
     url: string,
     params: { [key: string]: string },
@@ -60,6 +71,9 @@ export class FetchService {
     });
   }
 
+  /**
+   * Perform a get request
+   */
   public get<T>(
     url: string,
     params: { [key: string]: string },

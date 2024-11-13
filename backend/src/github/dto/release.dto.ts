@@ -1,16 +1,31 @@
-import { ApiProperty } from '@nestjs/swagger';
-
-export class ReleaseDTO {
-  @ApiProperty()
+export interface ReleaseDTO {
+  /**
+   * id of the release, usually the commit id
+   */
   id: string;
-  @ApiProperty()
+
+  /**
+   * url of the release
+   */
   url: string;
-  @ApiProperty()
+
+  /**
+   * name of the release
+   */
   name: string;
-  @ApiProperty()
+
+  /**
+   * url of the source archive
+   */
   zipball_url: string;
-  @ApiProperty()
+
+  /**
+   * Is this release a pre release
+   */
   prerelease: boolean;
-  @ApiProperty()
+
+  /**
+   * Is this release a draft
+   */
   draft: boolean;
 }

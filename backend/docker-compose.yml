@@ -1,14 +1,11 @@
-version: '3'
 services:
   slimevr-database:
-    image: "postgres"
+    image: 'postgres'
     restart: always
     environment:
-      POSTGRES_USER: slimevr
-      POSTGRES_PASSWORD: 123456
-      POSTGRES_DB: slimevr
-    ports:
-      - 5432:5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DATABASE}
     volumes:
       - database-volume:/var/lib/postgresql/data
     networks:
@@ -16,20 +13,22 @@ services:
   slimevr-api:
     build:
       context: .
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "50m"
     ports:
       - 3000:3000
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '50m'
     depends_on:
       - slimevr-database
       - slimevr-api-s3
     volumes:
       - ./src:/app/src
+      - ./prisma:/app/prisma
       - ./test:/app/test
     networks:
       - slimevr-network
+      - traefik
     secrets:
       - access_key
       - secret_key
@@ -45,11 +44,16 @@ services:
       S3_BUILDS_BUCKET: ${S3_BUILDS_BUCKET}
       GITHUB_AUTH: ${GITHUB_AUTH}
       HOST_URL: ${HOST_URL}
+      HOST_S3_URL: ${HOST_S3_URL}
+      DATABASE_URL: 'postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DATABASE}'
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.slimevr-api.rule=Host(`fw-tool-api.slimevr.io`)
+      - traefik.http.routers.slimevr-api.tls=true
+      - traefik.http.routers.slimevr-api.tls.certresolver=letsencrypt
+      - traefik.http.services.slimevr-api.loadbalancer.server.port=3000
   slimevr-api-s3:
     image: minio/minio:latest
-    ports:
-      - 9000:9000
-      - 9099:9099
     volumes:
       - storage-minio:/data
     secrets:
@@ -59,6 +63,13 @@ services:
     restart: always
     networks:
       - slimevr-network
+      - traefik
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.slimevr-api-s3.rule=Host(`fw-tool-bucket.slimevr.io`)
+      - traefik.http.routers.slimevr-api-s3.tls=true
+      - traefik.http.routers.slimevr-api-s3.tls.certresolver=letsencrypt
+      - traefik.http.services.slimevr-api-s3.loadbalancer.server.port=9099
   slimevr-api-s3-init:
     image: minio/mc:latest
     depends_on:
@@ -73,7 +84,7 @@ services:
       /usr/bin/mc alias set slimevr http://slimevr-api-s3:9099 `cat /run/secrets/access_key` `cat /run/secrets/secret_key`;
       /usr/bin/mc admin update slimevr;
       /usr/bin/mc mb --ignore-existing slimevr/slimevr-firmware-builds;
-      /usr/bin/mc anonymous set public slimevr/slimevr-firmware-builds;
+      /usr/bin/mc anonymous set download slimevr/slimevr-firmware-builds;
       exit 0;
       "
 
@@ -90,3 +101,5 @@ secrets:
 
 networks:
   slimevr-network:
+  traefik:
+    external: true

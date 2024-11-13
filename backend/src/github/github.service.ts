@@ -13,6 +13,15 @@ export class GithubService {
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
+  /**
+   * Get informations about a github repository
+   *
+   * This function use caching, TTL 5min
+   *
+   * @param owner owner of the repository
+   * @param repo name of the repository
+   * @returns GithubRepositoryDTO informations about the requested repository
+   */
   async getRepository(
     owner: string,
     repo: string,
@@ -30,7 +39,18 @@ export class GithubService {
     );
   }
 
-  private async getBranchRelease(
+  /**
+   *
+   * Get the release inforamations of a repository branch
+   *
+   * This function use caching, TTL 5min
+   *
+   * @param owner owner of the repository
+   * @param repo name of the repository
+   * @param branch branch inside the repository
+   * @returns ReleaseDTO informations about the release made with that branch
+   */
+  public async getBranchRelease(
     owner: string,
     repo: string,
     branch = 'main',
@@ -60,6 +80,17 @@ export class GithubService {
     );
   }
 
+  /**
+   *
+   * Get all the releases of a repository
+   *
+   * This function use caching, TTL 5min
+   *
+   *
+   * @param owner owner of the repository
+   * @param repo name of the repository
+   * @returns An array of ReleaseDTO, the list of all the releases inside the repo
+   */
   async getReleases(owner: string, repo: string): Promise<ReleaseDTO[]> {
     return this.cacheManager.wrap(
       `/repos/${owner}/${repo}/releases`,
@@ -85,6 +116,7 @@ export class GithubService {
                   'SlimeVR/v0.2.0',
                   'SlimeVR/v0.2.1',
                   'SlimeVR/v0.2.2',
+                  'SlimeVR/v0.2.3',
                 ].includes(name),
             ),
         ];
@@ -93,44 +125,17 @@ export class GithubService {
     );
   }
 
-  async getAllReleases(): Promise<ReleaseDTO[]> {
-    const releases: Promise<ReleaseDTO | ReleaseDTO[]>[] = [];
-
-    for (const [owner, repos] of Object.entries(AVAILABLE_FIRMWARE_REPOS)) {
-      for (const [repo, branches] of Object.entries(repos)) {
-        // Get all repo releases
-        releases.push(
-          this.getReleases(owner, repo).catch((e) => {
-            throw new Error(`Unable to fetch releases for "${owner}/${repo}"`, {
-              cause: e,
-            });
-          }),
-        );
-
-        // Get each branch as a release version
-        for (const branch of branches) {
-          releases.push(
-            this.getBranchRelease(owner, repo, branch).catch((e) => {
-              throw new Error(
-                `Unable to fetch branch release for "${owner}/${repo}/${branch}"`,
-                { cause: e },
-              );
-            }),
-          );
-        }
-      }
-    }
-
-    const settled = await Promise.allSettled(releases);
-    return settled.flatMap((it) => {
-      if (it.status === 'fulfilled') {
-        return it.value;
-      }
-      console.warn(`${it.reason.message}: `, it.reason.cause);
-      return []; // Needed for filtering invalid promises
-    });
-  }
-
+  /**
+   *
+   * Get the release information of a repository from its name
+   *
+   * This function use caching, TTL 5min
+   *
+   * @param owner owner of the repository
+   * @param repo name of the repository
+   * @param version version tag of the release
+   * @returns ReleaseDTO the informations about the requested release
+   */
   async getRelease(
     owner: string,
     repo: string,

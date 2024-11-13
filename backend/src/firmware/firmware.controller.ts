@@ -1,118 +1,146 @@
 import {
-  Body,
   Controller,
-  Get,
   Header,
   HttpException,
   HttpStatus,
-  Param,
-  Post,
   Sse,
 } from '@nestjs/common';
-import {
-  ApiBadRequestResponse,
-  ApiNotFoundResponse,
-  ApiOkResponse,
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import { ReleaseDTO } from 'src/github/dto/release.dto';
-import { GithubService } from 'src/github/github.service';
-import { BatteryType } from './dto/battery.dto';
-import { BoardTypeBoard } from './dto/board-type-board.dto';
-import { BuildFirmwareDTO } from './dto/build-firmware.dto';
-import { BuildResponse } from './dto/build-response.dto';
-import { BoardType, FirmwareBoardDTO } from './dto/firmware-board.dto';
-import { IMUConfigDTO, IMUDTO, IMUS, IMUType } from './dto/imu.dto';
-import { Firmware } from './entity/firmware.entity';
-import { VersionNotFoundError } from './errors/version-not-found.error';
+import { BuildResponseDTO } from './dto/build-response.dto';
+import { IMUDTO, IMUS } from './dto/imu.dto';
+import {
+  VersionNotFoundError,
+  VersionNotFoundExeption,
+  VersionNotFoundStatus,
+} from './errors/version-not-found.error';
 import { FirmwareService } from './firmware.service';
+import { FirmwareDTO, FirmwareDetailDTO } from './dto/firmware.dto';
+import { BatteryType, BoardType } from '@prisma/client';
+import { CreateBuildFirmwareDTO } from './dto/build-firmware.dto';
+import { AVAILABLE_BOARDS } from './firmware.constants';
+import { DefaultBuildConfigDTO } from './dto/default-config.dto';
+import { FirmwareBuilderService } from './firmware-builder.service';
+import { Observable } from 'rxjs';
+import {
+  TypedBody,
+  TypedException,
+  TypedParam,
+  TypedRoute,
+} from '@nestia/core';
 
-@ApiTags('slimevr')
+@ApiTags('firmware')
 @Controller('firmwares')
 export class FirmwareController {
   constructor(
     private firmwareService: FirmwareService,
-    private githubService: GithubService,
+    private firmwareBuilderService: FirmwareBuilderService,
   ) {}
 
-  @Get('/')
+  /**
+   * List all the built firmwares
+   */
+  @TypedRoute.Get('/')
   @Header('Cache-Control', 'public, max-age=7200')
-  @ApiResponse({ type: [Firmware] })
-  getFirmwares() {
+  async getFirmwares(): Promise<FirmwareDTO[]> {
     return this.firmwareService.getFirmwares();
   }
 
-  @Post('/build')
+  /**
+   * Build a firmware from the requested configuration
+   *
+   */
+  @TypedRoute.Post('/build')
   @Header('Cache-Control', 'no-cache')
-  @ApiOperation({
-    description: 'Build a specific configuration of the firmware',
-  })
-  @ApiOkResponse({ type: BuildResponse })
-  @ApiBadRequestResponse({ description: VersionNotFoundError })
-  async buildAll(@Body() body: BuildFirmwareDTO) {
-    return this.firmwareService.buildFirmware(body);
+  @TypedException<VersionNotFoundExeption>(
+    VersionNotFoundStatus,
+    VersionNotFoundError,
+  )
+  async buildFirmware(
+    @TypedBody() body: CreateBuildFirmwareDTO,
+  ): Promise<BuildResponseDTO> {
+    return this.firmwareBuilderService.buildFirmware(body);
   }
 
+  /**
+   * Get the build status of a firmware
+   * This is a SSE (Server Sent Event)
+   * you can use the web browser api to check for the build status and update the ui in real time
+   *
+   * @internal
+   */
   @Sse('/build-status/:id')
   @Header('Cache-Control', 'no-cache')
-  buildStatus(@Param('id') id: string) {
-    return this.firmwareService.getBuildStatusSubject(id);
+  buildStatus(
+    @TypedParam('id') id: string,
+  ): Observable<{ data: BuildResponseDTO }> {
+    return this.firmwareBuilderService.getBuildStatusSubject(id);
   }
 
-  @Get('/boards')
+  /**
+   * List all the possible board types
+   */
+  @TypedRoute.Get('/boards')
   @Header('Cache-Control', 'public, max-age=7200')
-  @ApiOkResponse({ type: [BoardTypeBoard] })
-  getBoardsTypes(): BoardTypeBoard[] {
-    return Object.keys(BoardType).map((board) => ({
-      boardType: BoardType[board],
-      board: this.firmwareService.getBoard(BoardType[board]),
-    }));
+  getBoardsTypes(): string[] {
+    // only list the boards that have config
+    return Object.keys(BoardType).filter((board) => AVAILABLE_BOARDS[board]);
   }
 
-  @Get('/versions')
+  /**
+   * List all the possible versions to build a firmware from
+   */
+  @TypedRoute.Get('/versions')
   @Header('Cache-Control', 'public, max-age=7200')
-  @ApiOkResponse({ type: [ReleaseDTO] })
   async getVersions(): Promise<ReleaseDTO[]> {
-    return this.githubService.getAllReleases();
+    return this.firmwareService.getAllReleases();
   }
 
-  @Get('/imus')
+  /**
+   * List all the possible imus to use
+   */
+  @TypedRoute.Get('/imus')
   @Header('Cache-Control', 'public, max-age=7200')
-  @ApiOkResponse({ type: [IMUDTO] })
   getIMUSTypes(): IMUDTO[] {
     return IMUS;
   }
 
-  @Get('/batteries')
+  /**
+   * List all the battery types
+   */
+  @TypedRoute.Get('/batteries')
   @Header('Cache-Control', 'public, max-age=7200')
-  @ApiOkResponse({ type: [String] })
   getBatteriesTypes(): string[] {
     return Object.keys(BatteryType);
   }
 
-  @Get('/default-config/:board')
+  /**
+   * Gives the default pins / configuration of a given board
+   */
+  @TypedRoute.Get('/default-config/:board')
   @Header('Cache-Control', 'public, max-age=7200')
-  @ApiOkResponse({ type: BuildFirmwareDTO })
-  getDefaultConfig(@Param('board') board: BoardType): BuildFirmwareDTO {
-    const dto = new BuildFirmwareDTO();
-    dto.board = new FirmwareBoardDTO();
-    dto.board.type = board;
-
-    const imu = new IMUConfigDTO();
-    imu.type = IMUType.IMU_MPU6050;
-
-    dto.imus = [imu];
-
-    return BuildFirmwareDTO.completeDefaults(dto);
+  getDefaultConfig(
+    @TypedParam('board') board: BoardType,
+  ): DefaultBuildConfigDTO {
+    return {
+      ...AVAILABLE_BOARDS[board],
+      boardConfig: {
+        ...AVAILABLE_BOARDS[board].boardConfig,
+        batteryType: AVAILABLE_BOARDS[board].boardConfig
+          .batteryType as BatteryType, // oof
+        type: board,
+      },
+    };
   }
 
-  @Get('/:id')
+  /**
+   * Get the inforamtions about a firmware from its id
+   * also provide more informations than the simple list, like pins and imus and files
+   */
+  @TypedRoute.Get('/:id')
   @Header('Cache-Control', 'no-cache')
-  @ApiResponse({ type: Firmware })
-  @ApiNotFoundResponse()
-  async getFirmware(@Param('id') id: string) {
+  @TypedException<HttpException>(HttpStatus.NOT_FOUND, 'Firmware not found')
+  async getFirmware(@TypedParam('id') id: string): Promise<FirmwareDetailDTO> {
     try {
       return await this.firmwareService.getFirmware(id);
     } catch {

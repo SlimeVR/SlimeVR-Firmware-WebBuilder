@@ -1,80 +1,92 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsOptional } from 'class-validator';
+import { ImuType } from '@prisma/client';
 
-export enum IMUType {
-  IMU_MPU9250 = 'IMU_MPU9250',
-  IMU_MPU6500 = 'IMU_MPU6500',
-  IMU_BNO080 = 'IMU_BNO080',
-  IMU_BNO085 = 'IMU_BNO085',
-  IMU_BNO055 = 'IMU_BNO055',
-  IMU_BNO086 = 'IMU_BNO086',
-  IMU_MPU6050 = 'IMU_MPU6050',
-  IMU_BMI160 = 'IMU_BMI160',
-  IMU_ICM20948 = 'IMU_ICM20948',
-  IMU_BMI270 = 'IMU_BMI270',
-}
-
+/**
+ * List of the imus types and informations about int pins
+ * this is used as display information, so we can hide
+ * the int pin field if the imu does not have one
+ */
 export const IMUS: IMUDTO[] = [
   {
-    type: IMUType.IMU_MPU9250,
+    type: ImuType.IMU_MPU9250,
     hasIntPin: false,
+    imuStartAddress: 0x68,
+    addressIncrement: 1,
   },
   {
-    type: IMUType.IMU_MPU6500,
+    type: ImuType.IMU_MPU6500,
     hasIntPin: false,
+    imuStartAddress: 0x68,
+    addressIncrement: 1,
   },
   {
-    type: IMUType.IMU_BNO080,
+    type: ImuType.IMU_BNO080,
     hasIntPin: true,
+    imuStartAddress: 0x4a,
+    addressIncrement: 1,
   },
   {
-    type: IMUType.IMU_BNO085,
+    type: ImuType.IMU_BNO085,
     hasIntPin: true,
+    imuStartAddress: 0x4a,
+    addressIncrement: 1,
   },
   {
-    type: IMUType.IMU_BNO055,
+    type: ImuType.IMU_BNO055,
     hasIntPin: true,
+    imuStartAddress: 0x29,
+    addressIncrement: -1,
   },
   {
-    type: IMUType.IMU_BNO086,
+    type: ImuType.IMU_BNO086,
     hasIntPin: true,
+    imuStartAddress: 0x4a,
+    addressIncrement: 1,
   },
   {
-    type: IMUType.IMU_MPU6050,
+    type: ImuType.IMU_MPU6050,
     hasIntPin: false,
+    imuStartAddress: 0x68,
+    addressIncrement: 1,
   },
   {
-    type: IMUType.IMU_BMI160,
+    type: ImuType.IMU_BMI160,
     hasIntPin: false,
+    imuStartAddress: 0x68,
+    addressIncrement: 1,
   },
   {
-    type: IMUType.IMU_ICM20948,
+    type: ImuType.IMU_ICM20948,
     hasIntPin: false,
+    imuStartAddress: 0x68,
+    addressIncrement: 1,
   },
   {
-    type: IMUType.IMU_BMI270,
+    type: ImuType.IMU_BMI270,
     hasIntPin: false,
+    imuStartAddress: 0x68,
+    addressIncrement: 1,
   },
 ];
 
-export class IMUConfigDTO {
-  @ApiProperty({ enum: IMUType })
-  @IsEnum(IMUType)
-  public type: IMUType;
+export interface IMUDTO {
+  /**
+   * Type of the imu
+   * @see {ImuType}
+   */
+  type: ImuType;
 
-  @ApiProperty()
-  public rotation: number;
+  /**
+   * Does that imu type require a int pin
+   */
+  hasIntPin: boolean;
 
-  @ApiProperty({ required: false })
-  @IsOptional()
-  public imuINT?: string;
-}
+  /**
+   * First address of the imu
+   */
+  imuStartAddress: number;
 
-export class IMUDTO {
-  @ApiProperty({ enum: IMUType })
-  @IsEnum(IMUType)
-  public type: IMUType;
-
-  @ApiProperty()
-  public hasIntPin: boolean;
+  /**
+   * Increment of the address for each new imus
+   */
+  addressIncrement: number;
 }

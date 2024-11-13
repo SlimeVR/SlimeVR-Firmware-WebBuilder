@@ -1,21 +1,30 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { BuildStatus } from '../entity/firmware.entity';
-import { FirmwareFile } from './firmware-files.dto';
+import { BuildStatus } from '@prisma/client';
+import { FirmwareFileDTO } from './firmware-file.dto';
 
-export class BuildResponse {
-  @ApiProperty()
+export class BuildResponseDTO {
+  /**
+   * Id of the firmware
+   * @see {Firmware}
+   *
+   * @format uuid
+   */
   public id: string;
 
-  @ApiProperty({ enum: BuildStatus })
+  /**
+   * Build status of the firmware
+   * @see {BuildStatus}
+   */
   public status: BuildStatus;
 
-  @ApiProperty({ required: false, type: [FirmwareFile] })
-  public firmwareFiles?: FirmwareFile[];
+  /**
+   * List of built firmware files, only set if the build succeeded
+   */
+  public firmwareFiles?: FirmwareFileDTO[];
 
   constructor(
     id: string,
     status: BuildStatus,
-    firmwareFiles: FirmwareFile[] = undefined,
+    firmwareFiles: FirmwareFileDTO[] | undefined = undefined,
   ) {
     this.id = id;
     this.status = status;
