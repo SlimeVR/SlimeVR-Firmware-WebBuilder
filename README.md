@@ -1,6 +1,19 @@
 
 ## Description
 
-This repository is a tool for building and flashing trackers with a web page.
-It contains both frontend and backend apps
+Slimevr firmware build api allows to build a tracker firmware with any configuration of Board imus pins and many other stuff
 
+
+## Installation
+
+```bash
+$ npm install
+```
+
+## Running the app
+
+```bash
+
+$ docker-compose up
+
+```
