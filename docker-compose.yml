@@ -13,8 +13,8 @@ services:
   slimevr-api:
     build:
       context: .
-    ports:
-      - 3000:3000
+    expose:
+      - 3000
     logging:
       driver: 'json-file'
       options:
@@ -61,6 +61,9 @@ services:
       - secret_key
     command: server --address ":9099" --console-address ":9000" /data/disk{1...4}
     restart: always
+    expose:
+      - 9099
+      - 9000
     networks:
       - slimevr-network
       - traefik
