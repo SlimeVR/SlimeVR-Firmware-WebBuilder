@@ -5,6 +5,7 @@ import { AVAILABLE_FIRMWARE_REPOS } from 'src/firmware/firmware.constants';
 import { ReleaseDTO } from './dto/release.dto';
 import { GithubRepositoryDTO } from './dto/repository.dto';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import semver from 'semver';
 
 @Injectable()
 export class GithubService {
@@ -112,12 +113,11 @@ export class GithubService {
             }))
             .filter(
               ({ name }) =>
-                ![
-                  'SlimeVR/v0.2.0',
-                  'SlimeVR/v0.2.1',
-                  'SlimeVR/v0.2.2',
-                  'SlimeVR/v0.2.3',
-                ].includes(name),
+                !name.startsWith('SlimeVR/') ||
+                semver.satisfies(
+                  name.substring(0, 'SlimeVR/v'.length),
+                  '>=0.2.3',
+                ),
             ),
         ];
       },

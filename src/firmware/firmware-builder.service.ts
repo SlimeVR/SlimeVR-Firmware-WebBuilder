@@ -42,7 +42,11 @@ export class FirmwareBuilderService {
   /**
    * Returns the content of the define.h based on the board config and imus config
    */
-  public getDefines(boardConfig: BoardConfigDTO, imusConfig: ImuConfig[]) {
+  public getDefines(
+    version: string,
+    boardConfig: BoardConfigDTO,
+    imusConfig: ImuConfig[],
+  ) {
     const rotationToFirmware = (rotation: number): number => {
       // Reduce the angle to its lowest equivalent form,
       // negate it to match the firmware rotation direction,
@@ -68,7 +72,13 @@ export class FirmwareBuilderService {
     // i just use the values of the first one if i only have one
     const secondImu = imusConfig.length === 1 ? imusConfig[0] : imusConfig[1];
 
+    const fwVersion = version.startsWith('SlimeVR/')
+      ? version.substring(0, 'SlimeVR/v'.length)
+      : version;
+
     return `
+          #define FIRMWARE_VERSION "${fwVersion}"
+
           #define IMU ${imusConfig[0].type}
           #define SECOND_IMU ${secondImu.type}
           #define BOARD ${boardConfig.type}
@@ -260,6 +270,7 @@ export class FirmwareBuilderService {
       const rootFoler = path.join(releaseFolderPath, root);
 
       const definesContent = this.getDefines(
+        firmware.buildVersion,
         firmware.boardConfig,
         firmware.imusConfig,
       );
