@@ -73,7 +73,7 @@ export class FirmwareBuilderService {
     const secondImu = imusConfig.length === 1 ? imusConfig[0] : imusConfig[1];
 
     const fwVersion = version.startsWith('SlimeVR/')
-      ? version.substring(0, 'SlimeVR/v'.length)
+      ? version.substring('SlimeVR/v'.length)
       : version;
 
     return `

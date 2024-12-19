@@ -114,10 +114,7 @@ export class GithubService {
             .filter(
               ({ name }) =>
                 !name.startsWith('SlimeVR/') ||
-                semver.satisfies(
-                  name.substring(0, 'SlimeVR/v'.length),
-                  '>=0.2.3',
-                ),
+                semver.satisfies(name.substring('SlimeVR/v'.length), '>=0.2.3'),
             ),
         ];
       },
