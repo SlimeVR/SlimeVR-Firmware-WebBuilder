@@ -25,5 +25,8 @@
   },
   "l0ud": {
     "SlimeVR-Tracker-ESP-BMI270": ["main"]
+  },
+  "Multi-sensor/Glove": {
+    "SlimeVR-Tracker-ESP": ["glove"]
   }
 }
