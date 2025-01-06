@@ -111,11 +111,16 @@ export class GithubService {
               name: `${owner}/${name}`,
               zipball_url,
             }))
-            .filter(
-              ({ name }) =>
-                !name.startsWith('SlimeVR/') ||
-                semver.satisfies(name.substring('SlimeVR/v'.length), '>=0.2.3'),
-            ),
+            .filter(({ name }) => {
+              if (!name.startsWith('SlimeVR/')) return true;
+
+              const version = name.substring('SlimeVR/v'.length);
+
+              return (
+                semver.satisfies(version, '>=0.2.3') &&
+                !semver.satisfies(version, '0.5.0 - 0.5.2')
+              );
+            }),
         ];
       },
       5 * 60 * 1000,
