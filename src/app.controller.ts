@@ -21,14 +21,14 @@ export class AppController {
   @Header('Cache-Control', 'public, max-age=7200')
   isCompatible(@TypedParam('version') version: string): VerionCheckResponse {
     const versions = '>=0.13.0';
-    const success = semver.satisfies(version, versions);
+    const success = semver.satisfies(semver.coerce(version), versions);
     return {
       success,
       reason: !success
         ? {
-            message: `The current version of the server does not satisfies the following versions requirement: ${version}`,
-            versions,
-          }
+          message: `The current version of the server does not satisfies the following versions requirement: ${version}`,
+          versions,
+        }
         : undefined,
     };
   }

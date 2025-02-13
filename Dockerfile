@@ -25,10 +25,11 @@
 # CMD ["bash", "/app/docker/nest/run.sh"]
 
 
-FROM node:20-slim AS base
+FROM node:22-slim AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
+RUN npm install --global corepack@latest
+RUN corepack enable pnpm
 RUN apt-get update \
 	&& apt-get install -y build-essential libssl-dev libffi-dev python3 python3-pip python3-venv git curl ca-certificates curl gnupg
 
