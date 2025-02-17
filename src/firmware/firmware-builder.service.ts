@@ -92,6 +92,9 @@ export class FirmwareBuilderService {
 
           #define MAX_IMU_COUNT ${imusConfig.length}
           #define MAX_SENSORS_COUNT ${imusConfig.length}
+          // Make sure the Tracker is defined as Rotating (TrackerType::TRACKER_TYPE_SVR_ROTATION) 
+          // (will need to be changed for glove left / right) Static number to support older FW Builds
+          #define TRACKER_TYPE 0
 
           #ifndef IMU_DESC_LIST
           #define IMU_DESC_LIST \\
