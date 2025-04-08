@@ -9,6 +9,7 @@
     "esModuleInterop": true,
     "target": "ESNext",
     "sourceMap": true,
+    "inlineSources": true,
     "outDir": "./dist",
     "baseUrl": "./",
     "incremental": true,

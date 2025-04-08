@@ -26,10 +26,15 @@ export class AppController {
       success,
       reason: !success
         ? {
-          message: `The current version of the server does not satisfies the following versions requirement: ${version}`,
-          versions,
-        }
+            message: `The current version of the server does not satisfies the following versions requirement: ${versions}`,
+            versions,
+          }
         : undefined,
     };
+  }
+
+  @TypedRoute.Get('/error')
+  error() {
+    throw 'ERRRORRRR';
   }
 }
