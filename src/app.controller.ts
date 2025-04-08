@@ -32,9 +32,4 @@ export class AppController {
         : undefined,
     };
   }
-
-  @TypedRoute.Get('/error')
-  error() {
-    throw 'ERRRORRRR';
-  }
 }
