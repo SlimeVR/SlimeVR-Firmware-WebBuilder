@@ -184,7 +184,7 @@
     ],
     "application_offset": 65536
   },
-  "BOARD_ES32C3DEVKITM1": {
+  "BOARD_ESP32C3DEVKITM1": {
     "needBootPress": true,
     "boardConfig": {
       "ledPin": "16",
@@ -230,6 +230,82 @@
         "sdaPin": "5",
         "sclPin": "4",
         "intPin": "8",
+        "optional": true
+      }
+    ],
+    "application_offset": 65536
+  },
+  "BOARD_WEMOSWROOM02": {
+    "boardConfig": {
+      "ledPin": "16",
+      "enableLed": true,
+      "ledInverted": true,
+      "batteryPin": "A0",
+      "batteryType": "BAT_EXTERNAL",
+      "batteryResistances": [180, 100, 220]
+    },
+    "imuDefaults": [
+      {
+        "sdaPin": "2",
+        "sclPin": "14",
+        "intPin": "0",
+        "optional": false
+      },
+      {
+        "sdaPin": "2",
+        "sclPin": "14",
+        "intPin": "4",
+        "optional": true
+      }
+    ],
+    "application_offset": 65536
+  },
+  "BOARD_XIAO_ESP32C3": {
+    "boardConfig": {
+      "ledPin": "4",
+      "enableLed": true,
+      "ledInverted": false,
+      "batteryPin": "2",
+      "batteryType": "BAT_EXTERNAL",
+      "batteryResistances": [0, 100, 100]
+    },
+    "imuDefaults": [
+      {
+        "sdaPin": "6",
+        "sclPin": "7",
+        "intPin": "5",
+        "optional": false
+      },
+      {
+        "sdaPin": "6",
+        "sclPin": "7",
+        "intPin": "10",
+        "optional": true
+      }
+    ],
+    "application_offset": 65536
+  },
+  "BOARD_ESP32C6DEVKITC1": {
+    "needBootPress": true,
+    "boardConfig": {
+      "ledPin": "16",
+      "enableLed": true,
+      "ledInverted": true,
+      "batteryPin": "3",
+      "batteryType": "BAT_EXTERNAL",
+      "batteryResistances": [180, 100, 220]
+    },
+    "imuDefaults": [
+      {
+        "sdaPin": "5",
+        "sclPin": "4",
+        "intPin": "6",
+        "optional": false
+      },
+      {
+        "sdaPin": "5",
+        "sclPin": "4",
+        "intPin": "7",
         "optional": true
       }
     ],

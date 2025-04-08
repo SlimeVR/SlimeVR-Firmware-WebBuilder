@@ -66,6 +66,54 @@ export const IMUS: IMUDTO[] = [
     imuStartAddress: 0x68,
     addressIncrement: 1,
   },
+  {
+    type: ImuType.IMU_ICM42688,
+    hasIntPin: false,
+    imuStartAddress: 0x68,
+    addressIncrement: 1,
+  },
+  {
+    type: ImuType.IMU_LSM6DS3TRC,
+    hasIntPin: false,
+    imuStartAddress: 0x6a,
+    addressIncrement: 1,
+  },
+  {
+    type: ImuType.IMU_LSM6DSV,
+    hasIntPin: false,
+    imuStartAddress: 0x6a,
+    addressIncrement: 1,
+  },
+  {
+    type: ImuType.IMU_LSM6DSO,
+    hasIntPin: false,
+    imuStartAddress: 0x6a,
+    addressIncrement: 1,
+  },
+  {
+    type: ImuType.IMU_LSM6DSR,
+    hasIntPin: false,
+    imuStartAddress: 0x6a,
+    addressIncrement: 1,
+  },
+  {
+    type: ImuType.IMU_MPU6050_SF,
+    hasIntPin: false,
+    imuStartAddress: 0x68,
+    addressIncrement: 1,
+  },
+  {
+    type: ImuType.IMU_ICM45686,
+    hasIntPin: false,
+    imuStartAddress: 0x68,
+    addressIncrement: 1,
+  },
+  {
+    type: ImuType.IMU_ICM45605,
+    hasIntPin: false,
+    imuStartAddress: 0x68,
+    addressIncrement: 1,
+  },
 ];
 
 export interface IMUDTO {
