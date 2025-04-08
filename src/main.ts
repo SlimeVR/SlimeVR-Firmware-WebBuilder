@@ -1,6 +1,9 @@
+import './instrument';
+
 import { NestFactory } from '@nestjs/core';
 import { OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+
 import swaggerDocument from './swagger.json';
 
 async function bootstrap() {
