@@ -125,7 +125,7 @@ export class FirmwareBuilderService {
                   .join(' \\\n\t\t ')}
           #endif
 
-          #infdef SENSOR_INFO_LIST
+          #ifndef SENSOR_INFO_LIST
           #define SENSOR_INFO_LIST
           #endif
 
@@ -425,7 +425,7 @@ export class FirmwareBuilderService {
     } catch (e) {
       getCurrentScope().addAttachment({
         filename: 'pio-logs.txt',
-        data: logs.join('\n'),
+        data: logs.join(''),
       });
       getCurrentScope().addAttachment({
         filename: 'defines.h',
