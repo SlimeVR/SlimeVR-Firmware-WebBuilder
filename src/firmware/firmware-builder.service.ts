@@ -138,7 +138,9 @@ export class FirmwareBuilderService {
           #define BATTERY_SHIELD_R1 ${boardConfig.batteryResistances[1]}
           #define BATTERY_SHIELD_R2 ${boardConfig.batteryResistances[2]}
           `
-              : ``
+              : `
+          #define PIN_BATTERY_LEVEL 255
+          `
           }
     
           #define PIN_IMU_SDA ${imusConfig[0].sdaPin}
