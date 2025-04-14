@@ -11,6 +11,7 @@ import {
 import { InjectAws } from 'aws-sdk-v3-nest';
 import { PrismaService } from 'src/commons/prisma/prisma.service';
 import { Firmware, Prisma } from '@prisma/client';
+import * as Sentry from '@sentry/nestjs';
 
 @Injectable()
 export class FirmwareService implements OnApplicationBootstrap {
@@ -77,6 +78,7 @@ export class FirmwareService implements OnApplicationBootstrap {
       if (it.status === 'fulfilled') {
         return it.value;
       }
+      Sentry.captureException(it); // Still send the error to sentry to it can be seen
       console.warn(`${it.reason.message}: `, it.reason.cause);
       return []; // Needed for filtering invalid promises
     });
