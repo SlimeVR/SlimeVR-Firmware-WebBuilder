@@ -27,6 +27,7 @@ import { BoardConfigDTO } from './dto/board-config.dto';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { InjectAws } from 'aws-sdk-v3-nest';
 import { IMUS } from './dto/imu.dto';
+import { captureException, getCurrentScope } from '@sentry/nestjs';
 
 @Injectable()
 export class FirmwareBuilderService {
@@ -78,9 +79,11 @@ export class FirmwareBuilderService {
 
       return `SENSOR_DESC_ENTRY(${imuConfig.type}, ${
         imu.imuStartAddress + index * imu.addressIncrement
-      }, ${rotationToFirmware(imuConfig.rotation)}, DIRECT_WIRE(${imuConfig.sclPin}, ${
-        imuConfig.sdaPin
-      }), ${imuConfig.optional}, DIRECT_PIN(${imuConfig.intPin || 255}))`;
+      }, ${rotationToFirmware(imuConfig.rotation)}, DIRECT_WIRE(${
+        imuConfig.sclPin
+      }, ${imuConfig.sdaPin}), ${imuConfig.optional}, DIRECT_PIN(${
+        imuConfig.intPin || 255
+      }))`;
     };
 
     // this is to deal with old firmware versions where two imus where always declared
@@ -122,7 +125,7 @@ export class FirmwareBuilderService {
                   .join(' \\\n\t\t ')}
           #endif
 
-          #infdef SENSOR_INFO_LIST
+          #ifndef SENSOR_INFO_LIST
           #define SENSOR_INFO_LIST
           #endif
 
@@ -247,8 +250,16 @@ export class FirmwareBuilderService {
     >,
     release: ReleaseDTO,
   ) {
+    const logs: string[] = [];
+
     if (!firmware.boardConfig)
       throw new Error('invalid state, the firmware entry has no board config');
+
+    const definesContent = this.getDefines(
+      firmware.buildVersion,
+      firmware.boardConfig,
+      firmware.imusConfig,
+    );
 
     let tmpDir;
 
@@ -285,8 +296,6 @@ export class FirmwareBuilderService {
 
       const releaseFolderPath = path.join(tmpDir, `release-${release.name}`);
       const zip = new AdmZip(releaseFilePath);
-      // Extract release
-      console.log('start extract', releaseFilePath, releaseFolderPath);
       await new Promise((resolve) => {
         zip.extractAllTo(releaseFolderPath, true);
         resolve(true);
@@ -300,12 +309,6 @@ export class FirmwareBuilderService {
       const [root] = await readdir(releaseFolderPath);
       const rootFoler = path.join(releaseFolderPath, root);
 
-      const definesContent = this.getDefines(
-        firmware.buildVersion,
-        firmware.boardConfig,
-        firmware.imusConfig,
-      );
-      console.log(definesContent);
       await writeFile(path.join(rootFoler, 'src', 'defines.h'), definesContent);
       await rm(join(rootFoler, 'platformio.ini'));
       await rename(
@@ -342,7 +345,8 @@ export class FirmwareBuilderService {
               'invalid state, the firmware entry has no board config',
             );
 
-          console.log('[BUILD LOG]', `[${firmware.id}]`, data.toString());
+          logs.push(data.toString());
+          // console.log('[BUILD LOG]', `[${firmware.id}]`, data.toString());
           this.buildStatusSubject.next({
             id: firmware.id,
             status: BuildStatus.BUILDING,
@@ -354,8 +358,8 @@ export class FirmwareBuilderService {
             throw new Error(
               'invalid state, the firmware entry has no board config',
             );
-
-          console.log('[BUILD LOG]', `[${firmware.id}]`, data.toString());
+          logs.push(`[ERR] ${data.toString()}`);
+          // console.log('[BUILD LOG]', `[${firmware.id}]`, data.toString());
         });
 
         platformioRun.on('exit', (code) => {
@@ -375,17 +379,21 @@ export class FirmwareBuilderService {
         rootFoler,
       );
 
-      console.log(files);
-
-      await Promise.all(
-        files.map(async ({ path }, index) =>
+      await Promise.all([
+        ...files.map(async ({ path }, index) =>
           this.uploadFirmware(
             firmware.id,
             `firmware-part-${index}.bin`,
             await readFile(path),
           ),
         ),
-      );
+        // Also add defines.h file to the bucket for debugging
+        this.uploadFirmware(
+          firmware.id,
+          `defines.h`,
+          Buffer.from(definesContent, 'utf-8'),
+        ),
+      ]);
 
       const firmwareFiles = files.map(({ offset, isFirmware }, index) => ({
         offset,
@@ -415,7 +423,15 @@ export class FirmwareBuilderService {
         })),
       });
     } catch (e) {
-      console.log(e);
+      getCurrentScope().addAttachment({
+        filename: 'pio-logs.txt',
+        data: logs.join(''),
+      });
+      getCurrentScope().addAttachment({
+        filename: 'defines.h',
+        data: definesContent,
+      });
+      captureException(e);
       this.buildStatusSubject.next({
         id: firmware.id,
         status: BuildStatus.ERROR,
@@ -425,14 +441,8 @@ export class FirmwareBuilderService {
         data: { buildStatus: BuildStatus.ERROR },
       });
     } finally {
-      try {
-        if (tmpDir) {
-          await rm(tmpDir, { recursive: true });
-        }
-      } catch (e) {
-        console.error(
-          `An error has occurred while removing the temp folder at ${tmpDir}. Please remove it manually. Error: ${e}`,
-        );
+      if (tmpDir) {
+        await rm(tmpDir, { recursive: true });
       }
     }
   }
