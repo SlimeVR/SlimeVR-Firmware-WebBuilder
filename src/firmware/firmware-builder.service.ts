@@ -131,13 +131,14 @@ export class FirmwareBuilderService {
 
           #define BATTERY_MONITOR ${boardConfig.batteryType}
           ${
-            boardConfig.batteryType === BatteryType.BAT_EXTERNAL &&
-            `
+            boardConfig.batteryType === BatteryType.BAT_EXTERNAL
+              ? `
           #define PIN_BATTERY_LEVEL ${boardConfig.batteryPin}
           #define BATTERY_SHIELD_RESISTANCE ${boardConfig.batteryResistances[0]}
           #define BATTERY_SHIELD_R1 ${boardConfig.batteryResistances[1]}
           #define BATTERY_SHIELD_R2 ${boardConfig.batteryResistances[2]}
           `
+              : ``
           }
     
           #define PIN_IMU_SDA ${imusConfig[0].sdaPin}
