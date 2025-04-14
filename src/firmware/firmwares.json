@@ -1,29 +1,45 @@
 {
   "SlimeVR": {
-    "SlimeVR-Tracker-ESP": ["main"]
+    "SlimeVR-Tracker-ESP": [
+      "main"
+    ]
   },
   "deiteris": {
-    "SlimeVR-Tracker-ESP": ["qmc-mag-new", "hmc-mag"]
+    "SlimeVR-Tracker-ESP": [
+      "qmc-mag-new",
+      "hmc-mag"
+    ]
   },
   "TheBug233": {
-    "SlimeVR-Tracker-ESP-For-Kitkat": ["qmc-axis-aligned-en"]
+    "SlimeVR-Tracker-ESP-For-Kitkat": [
+      "qmc-axis-aligned-en"
+    ]
   },
   "Lupinixx": {
-    "SlimeVR-Tracker-ESP": ["mpu6050-fifo"]
+    "SlimeVR-Tracker-ESP": [
+      "mpu6050-fifo"
+    ]
   },
   "0forks": {
-    "SlimeVR-Tracker-ESP-BMI160": ["v3dev", "v3dev-bmm"]
+    "SlimeVR-Tracker-ESP-BMI160": [
+      "v3dev",
+      "v3dev-bmm"
+    ]
   },
   "unlogisch04": {
-    "SlimeVR-Tracker-ESP": ["upd_espidf_pioarduino"]
+    "SlimeVR-Tracker-ESP": [
+      "upd_espidf_pioarduino"
+    ]
   },
   "ButterscotchV": {
-    "SlimeVR-Tracker-ESP": ["mag-enabled-stable", "mag-enabled-main"]
-  },
-  "nekomona": {
-    "SlimeVR-Tracker-ESP": ["unify-fusion"]
+    "SlimeVR-Tracker-ESP": [
+      "mag-enabled-stable",
+      "mag-enabled-main"
+    ]
   },
   "l0ud": {
-    "SlimeVR-Tracker-ESP-BMI270": ["main"]
+    "SlimeVR-Tracker-ESP-BMI270": [
+      "main"
+    ]
   }
 }
