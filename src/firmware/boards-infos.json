@@ -36,7 +36,7 @@
     "boardConfig": {
       "ledPin": "2",
       "enableLed": true,
-      "ledInverted": false,
+      "ledInverted": true,
       "batteryPin": "A0",
       "batteryType": "BAT_EXTERNAL",
       "batteryResistances": [180, 100, 220]
@@ -61,7 +61,7 @@
     "boardConfig": {
       "ledPin": "2",
       "enableLed": true,
-      "ledInverted": false,
+      "ledInverted": true,
       "batteryPin": "A0",
       "batteryType": "BAT_EXTERNAL",
       "batteryResistances": [180, 100, 220]
@@ -86,7 +86,7 @@
     "boardConfig": {
       "ledPin": "2",
       "enableLed": true,
-      "ledInverted": false,
+      "ledInverted": true,
       "batteryPin": "A0",
       "batteryType": "BAT_EXTERNAL",
       "batteryResistances": [180, 100, 220]
@@ -112,7 +112,7 @@
     "boardConfig": {
       "ledPin": "2",
       "enableLed": true,
-      "ledInverted": false,
+      "ledInverted": true,
       "batteryPin": "36",
       "batteryType": "BAT_EXTERNAL",
       "batteryResistances": [180, 100, 220]
@@ -138,7 +138,7 @@
     "boardConfig": {
       "ledPin": "255",
       "enableLed": false,
-      "ledInverted": false,
+      "ledInverted": true,
       "batteryPin": "A0",
       "batteryType": "BAT_EXTERNAL",
       "batteryResistances": [180, 100, 220]
@@ -163,7 +163,7 @@
     "boardConfig": {
       "ledPin": "10",
       "enableLed": true,
-      "ledInverted": true,
+      "ledInverted": false,
       "batteryPin": "3",
       "batteryType": "BAT_EXTERNAL",
       "batteryResistances": [0, 10, 40.2]
@@ -289,7 +289,7 @@
     "needBootPress": true,
     "boardConfig": {
       "ledPin": "16",
-      "enableLed": true,
+      "enableLed": false,
       "ledInverted": true,
       "batteryPin": "3",
       "batteryType": "BAT_EXTERNAL",
