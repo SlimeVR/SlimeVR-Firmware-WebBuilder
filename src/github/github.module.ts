@@ -9,7 +9,7 @@ import { CacheModule } from '@nestjs/cache-manager';
     CacheModule.register(),
     FetchModule.config({
       baseUrl: 'https://api.github.com',
-      headers: { Authorization: `Basic ${configService.getGitHubAuth()}` },
+      headers: { Authorization: `${configService.getGitHubAuth()}` },
     }),
   ],
   providers: [GithubService, configProvider],
