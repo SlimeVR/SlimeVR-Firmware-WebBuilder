@@ -153,7 +153,13 @@ export class GithubService {
         // And a matching branch
         if (repoBranches.includes(version)) {
           // Then return the branch release instead of looking for a version
-          return this.getBranchRelease(owner, repo, version);
+          return this.getBranchRelease(owner, repo, version)
+            .catch((e) => {
+              throw new Error(
+                `Unable to fetch branch release for "${owner}/${repo}/${version}"`,
+                { cause: e },
+              );
+            });
         }
       }
     }
