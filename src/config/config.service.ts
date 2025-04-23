@@ -89,6 +89,10 @@ export class ConfigService {
   public getHostS3Url() {
     return this.getValue('HOST_S3_URL', true);
   }
+
+  public getSentryUrl() {
+    return this.getValue('SENTRY_URL', false);
+  }
 }
 
 const configService = new ConfigService(process.env).ensureValues([
@@ -99,6 +103,7 @@ const configService = new ConfigService(process.env).ensureValues([
   'GITHUB_AUTH',
   'HOST_URL',
   'HOST_S3_URL',
+  'SENTRY_URL',
 ]);
 
 const APP_CONFIG = 'APP_CONFIG';
