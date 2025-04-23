@@ -4,42 +4,21 @@
       "main"
     ]
   },
-  "deiteris": {
+  "kounocom": {
     "SlimeVR-Tracker-ESP": [
-      "qmc-mag-new",
-      "hmc-mag"
+      "sfusion-machine-optimized",
+      "dynamic-sfusion",
+      "sfusion-tuned-mbe"
     ]
   },
-  "TheBug233": {
-    "SlimeVR-Tracker-ESP-For-Kitkat": [
-      "qmc-axis-aligned-en"
-    ]
-  },
-  "Lupinixx": {
+  "gorbit99": {
     "SlimeVR-Tracker-ESP": [
-      "mpu6050-fifo"
+      "on-off-button"
     ]
   },
-  "0forks": {
-    "SlimeVR-Tracker-ESP-BMI160": [
-      "v3dev",
-      "v3dev-bmm"
-    ]
-  },
-  "unlogisch04": {
-    "SlimeVR-Tracker-ESP": [
-      "upd_espidf_pioarduino"
-    ]
-  },
-  "ButterscotchV": {
-    "SlimeVR-Tracker-ESP": [
-      "mag-enabled-stable",
-      "mag-enabled-main"
-    ]
-  },
-  "l0ud": {
-    "SlimeVR-Tracker-ESP-BMI270": [
-      "main"
+  "wigwagwent": {
+    "LSM6DSV16X": [
+      "BMI_senscal"
     ]
   }
 }
