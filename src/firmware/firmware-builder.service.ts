@@ -90,7 +90,7 @@ export class FirmwareBuilderService {
     // i just use the values of the first one if i only have one
     const secondImu = imusConfig.length === 1 ? imusConfig[0] : imusConfig[1];
 
-    const fwVersion = version.startsWith('SlimeVR/')
+    const fwVersion = version.startsWith('SlimeVR/v')
       ? version.substring('SlimeVR/v'.length)
       : version;
 
