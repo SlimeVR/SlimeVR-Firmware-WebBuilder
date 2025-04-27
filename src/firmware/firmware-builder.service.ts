@@ -83,7 +83,7 @@ export class FirmwareBuilderService {
         imuConfig.sclPin
       }, ${imuConfig.sdaPin}), ${imuConfig.optional}, DIRECT_PIN(${
         imuConfig.intPin || 255
-      }))`;
+      }), 0 )`;
     };
 
     // this is to deal with old firmware versions where two imus where always declared
