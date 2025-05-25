@@ -93,14 +93,14 @@
     },
     "imuDefaults": [
       {
-        "sdaPin": "4",
-        "sclPin": "5",
+        "sdaPin": "5",
+        "sclPin": "4",
         "intPin": "14",
         "optional": false
       },
       {
-        "sdaPin": "4",
-        "sclPin": "5",
+        "sdaPin": "5",
+        "sclPin": "4",
         "intPin": "13",
         "optional": true
       }
@@ -119,14 +119,14 @@
     },
     "imuDefaults": [
       {
-        "sdaPin": "2",
-        "sclPin": "0",
+        "sdaPin": "21",
+        "sclPin": "22",
         "intPin": "23",
         "optional": false
       },
       {
-        "sdaPin": "2",
-        "sclPin": "0",
+        "sdaPin": "21",
+        "sclPin": "22",
         "intPin": "25",
         "optional": true
       }
@@ -139,8 +139,8 @@
       "ledPin": "255",
       "enableLed": false,
       "ledInverted": true,
-      "batteryPin": "A0",
-      "batteryType": "BAT_EXTERNAL",
+      "batteryPin": "255",
+      "batteryType": "BAT_INTERNAL",
       "batteryResistances": [180, 100, 220]
     },
     "imuDefaults": [
@@ -166,7 +166,7 @@
       "ledInverted": false,
       "batteryPin": "3",
       "batteryType": "BAT_EXTERNAL",
-      "batteryResistances": [0, 10, 40.2]
+      "batteryResistances": [180, 100, 220]
     },
     "imuDefaults": [
       {
@@ -187,8 +187,8 @@
   "BOARD_ESP32C3DEVKITM1": {
     "needBootPress": true,
     "boardConfig": {
-      "ledPin": "16",
-      "enableLed": true,
+      "ledPin": "LED_BUILTIN",
+      "enableLed": false,
       "ledInverted": true,
       "batteryPin": "3",
       "batteryType": "BAT_EXTERNAL",
@@ -288,7 +288,7 @@
   "BOARD_ESP32C6DEVKITC1": {
     "needBootPress": true,
     "boardConfig": {
-      "ledPin": "16",
+      "ledPin": "LED_BUILTIN",
       "enableLed": false,
       "ledInverted": true,
       "batteryPin": "3",
