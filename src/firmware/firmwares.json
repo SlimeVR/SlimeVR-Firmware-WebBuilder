@@ -7,7 +7,6 @@
   "kounocom": {
     "SlimeVR-Tracker-ESP": [
       "sfusion-machine-optimized",
-      "dynamic-sfusion",
       "sfusion-tuned-mbe"
     ]
   },
