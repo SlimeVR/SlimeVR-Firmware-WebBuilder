@@ -1,13 +1,8 @@
 {
   "SlimeVR": {
     "SlimeVR-Tracker-ESP": [
-      "main"
-    ]
-  },
-  "kounocom": {
-    "SlimeVR-Tracker-ESP": [
-      "sfusion-machine-optimized",
-      "sfusion-tuned-mbe"
+      "main",
+      "optimized-params-v2"
     ]
   },
   "gorbit99": {
