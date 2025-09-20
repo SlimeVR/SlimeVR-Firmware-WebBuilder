@@ -100,9 +100,7 @@ export class GithubService {
           `/repos/${owner}/${repo}/releases`,
           {},
         );
-
-        return [
-          ...data
+        const res = data
             .map(({ id, url, prerelease, draft, name, zipball_url }) => ({
               id: `${id}`,
               url,
@@ -111,7 +109,8 @@ export class GithubService {
               name: `${owner}/${name}`,
               zipball_url,
             }))
-            .filter(({ name }) => {
+            .filter(({ name, draft }) => {
+              if (draft) return false;
               if (!name.startsWith('SlimeVR/')) return true;
 
               const version = name.substring('SlimeVR/v'.length);
@@ -120,8 +119,8 @@ export class GithubService {
                 semver.satisfies(version, '>=0.2.3') &&
                 !semver.satisfies(version, '0.5.0 - 0.5.2')
               );
-            }),
-        ];
+            })
+        return [...res];
       },
       5 * 60 * 1000,
     );
