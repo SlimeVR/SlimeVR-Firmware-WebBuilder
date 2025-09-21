@@ -117,7 +117,8 @@ export class GithubService {
 
               return (
                 semver.satisfies(version, '>=0.2.3') &&
-                !semver.satisfies(version, '0.5.0 - 0.5.2')
+                !semver.satisfies(version, '0.5.0 - 0.5.2') &&
+                !semver.satisfies(version, '0.6.2')
               );
             })
         return [...res];
