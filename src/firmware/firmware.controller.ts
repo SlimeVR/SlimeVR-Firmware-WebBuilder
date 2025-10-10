@@ -5,132 +5,70 @@ import {
   HttpStatus,
   Sse,
 } from '@nestjs/common';
+import { TypedBody, TypedParam, TypedQuery, TypedRoute } from '@nestia/core';
 import { ApiTags } from '@nestjs/swagger';
-import { ReleaseDTO } from 'src/github/dto/release.dto';
-import { BuildResponseDTO } from './dto/build-response.dto';
-import { IMUDTO, IMUS } from './dto/imu.dto';
-import {
-  VersionNotFoundError,
-  VersionNotFoundExeption,
-  VersionNotFoundStatus,
-} from './errors/version-not-found.error';
+import type {
+  BoardDefaultsQuery,
+  BuildFirmwareBody,
+  BuildStatus,
+  FirmwareBoardDefaults,
+  FirmwareSource,
+  FirmwareWithFiles,
+} from './firmware.types';
 import { FirmwareService } from './firmware.service';
-import { FirmwareDTO, FirmwareDetailDTO } from './dto/firmware.dto';
-import { BatteryType, BoardType } from '@prisma/client';
-import { CreateBuildFirmwareDTO } from './dto/build-firmware.dto';
-import { AVAILABLE_BOARDS } from './firmware.constants';
-import { DefaultBuildConfigDTO } from './dto/default-config.dto';
-import { FirmwareBuilderService } from './firmware-builder.service';
 import { Observable } from 'rxjs';
-import {
-  TypedBody,
-  TypedException,
-  TypedParam,
-  TypedRoute,
-} from '@nestia/core';
 
-@ApiTags('firmware')
-@Controller('firmwares')
+@ApiTags('firmwares')
+@Controller('/firmware')
 export class FirmwareController {
-  constructor(
-    private firmwareService: FirmwareService,
-    private firmwareBuilderService: FirmwareBuilderService,
-  ) {}
+  constructor(public firmwareService: FirmwareService) {}
 
   /**
-   * List all the built firmwares
+   * List all the sources you can build a firmware from
    */
-  @TypedRoute.Get('/')
+  @TypedRoute.Get('/sources')
   @Header('Cache-Control', 'public, max-age=7200')
-  async getFirmwares(): Promise<FirmwareDTO[]> {
-    return this.firmwareService.getFirmwares();
+  sources(): FirmwareSource[] {
+    return this.firmwareService.getSources();
   }
 
   /**
-   * Build a firmware from the requested configuration
+   * Fet the defaults of a specific board on a specific firmware
+   *
+   * @param board Board name
+   * @param source repo path (ex: Slimevr/Slimevr-ESP)
    *
    */
+  @TypedRoute.Get('/board-defaults')
+  @Header('Cache-Control', 'public, max-age=7200')
+  boardDefaults(
+    @TypedQuery() query: BoardDefaultsQuery,
+  ): FirmwareBoardDefaults | null {
+    return this.firmwareService.getBoard(
+      query.source,
+      query.version,
+      query.board,
+    );
+  }
+
   @TypedRoute.Post('/build')
-  @Header('Cache-Control', 'no-cache')
-  @TypedException<VersionNotFoundExeption>(
-    VersionNotFoundStatus,
-    VersionNotFoundError,
-  )
-  async buildFirmware(
-    @TypedBody() body: CreateBuildFirmwareDTO,
-  ): Promise<BuildResponseDTO> {
-    return this.firmwareBuilderService.buildFirmware(body);
+  buildFirmware(@TypedBody() body: BuildFirmwareBody) {
+    return this.firmwareService.buildFirmware(body);
   }
 
   /**
    * Get the build status of a firmware
    * This is a SSE (Server Sent Event)
-   * you can use the web browser api to check for the build status and update the ui in real time
+   * it is a special type of request ou of the REST spec.
+   * see {@link https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events}
    *
+   * We set it as internal to make nestia ignore it, as OpenAPI standard cannot handle SSE
    * @internal
    */
   @Sse('/build-status/:id')
   @Header('Cache-Control', 'no-cache')
-  buildStatus(
-    @TypedParam('id') id: string,
-  ): Observable<{ data: BuildResponseDTO }> {
-    return this.firmwareBuilderService.getBuildStatusSubject(id);
-  }
-
-  /**
-   * List all the possible board types
-   */
-  @TypedRoute.Get('/boards')
-  @Header('Cache-Control', 'public, max-age=7200')
-  getBoardsTypes(): string[] {
-    // only list the boards that have config
-    return Object.keys(BoardType).filter((board) => AVAILABLE_BOARDS[board]);
-  }
-
-  /**
-   * List all the possible versions to build a firmware from
-   */
-  @TypedRoute.Get('/versions')
-  @Header('Cache-Control', 'public, max-age=7200')
-  async getVersions(): Promise<ReleaseDTO[]> {
-    return this.firmwareService.getAllReleases();
-  }
-
-  /**
-   * List all the possible imus to use
-   */
-  @TypedRoute.Get('/imus')
-  @Header('Cache-Control', 'public, max-age=7200')
-  getIMUSTypes(): IMUDTO[] {
-    return IMUS;
-  }
-
-  /**
-   * List all the battery types
-   */
-  @TypedRoute.Get('/batteries')
-  @Header('Cache-Control', 'public, max-age=7200')
-  getBatteriesTypes(): string[] {
-    return Object.keys(BatteryType);
-  }
-
-  /**
-   * Gives the default pins / configuration of a given board
-   */
-  @TypedRoute.Get('/default-config/:board')
-  @Header('Cache-Control', 'public, max-age=7200')
-  getDefaultConfig(
-    @TypedParam('board') board: BoardType,
-  ): DefaultBuildConfigDTO {
-    return {
-      ...AVAILABLE_BOARDS[board],
-      boardConfig: {
-        ...AVAILABLE_BOARDS[board].boardConfig,
-        batteryType: AVAILABLE_BOARDS[board].boardConfig
-          .batteryType as BatteryType, // oof
-        type: board,
-      },
-    };
+  buildStatus(@TypedParam('id') id: string): Observable<{ data: BuildStatus }> {
+    return this.firmwareService.getBuildStatusSubject(id);
   }
 
   /**
@@ -139,12 +77,11 @@ export class FirmwareController {
    */
   @TypedRoute.Get('/:id')
   @Header('Cache-Control', 'no-cache')
-  @TypedException<HttpException>(HttpStatus.NOT_FOUND, 'Firmware not found')
-  async getFirmware(@TypedParam('id') id: string): Promise<FirmwareDetailDTO> {
-    try {
-      return await this.firmwareService.getFirmware(id);
-    } catch {
+  // @TypedException<HttpException>(HttpStatus.NOT_FOUND, 'Firmware not found')
+  async getFirmware(@TypedParam('id') id: string): Promise<FirmwareWithFiles> {
+    const firmware = await this.firmwareService.getFirmware(id);
+    if (!firmware)
       throw new HttpException('Firmware not found', HttpStatus.NOT_FOUND);
-    }
+    return firmware;
   }
 }

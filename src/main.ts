@@ -1,21 +1,18 @@
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import { NestiaSwaggerComposer } from '@nestia/sdk';
+import { OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
+import { PORT } from './env';
+
 import './instrument';
 
-import { NestFactory } from '@nestjs/core';
-import { OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
-import { AppModule } from './app.module';
-
-import swaggerDocument from './swagger.json';
-
 async function bootstrap() {
-  process.on('unhandledRejection', (reason, p) => {
-    console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
-  });
-
   const app = await NestFactory.create(AppModule, {
     cors: true,
   });
+  const document = await NestiaSwaggerComposer.document(app, {});
 
-  const openApiDoc = swaggerDocument as OpenAPIObject;
+  const openApiDoc = document as OpenAPIObject;
 
   openApiDoc.servers = [];
 
@@ -28,6 +25,7 @@ async function bootstrap() {
       },
     },
   });
-  await app.listen(3000);
+
+  await app.listen(PORT);
 }
-bootstrap();
+bootstrap().catch(console.error);

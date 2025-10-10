@@ -1,15 +1,18 @@
-import { TypedParam, TypedRoute } from '@nestia/core';
 import { Controller, Header } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { TypedParam, TypedRoute } from '@nestia/core';
 import semver from 'semver';
+import { ApiTags } from '@nestjs/swagger';
+import { SUPPORTED_VERSIONS } from './env';
 
-interface VerionCheckResponse {
-  success: boolean;
-  reason?: {
-    message: string;
-    versions: string;
-  };
-}
+type VerionCheckResponse =
+  | { success: true }
+  | {
+      success: false;
+      reason: {
+        message: string;
+        versions: string;
+      };
+    };
 
 @ApiTags('app')
 @Controller()
@@ -20,16 +23,34 @@ export class AppController {
   @TypedRoute.Get('/is-compatible/:version')
   @Header('Cache-Control', 'public, max-age=7200')
   isCompatible(@TypedParam('version') version: string): VerionCheckResponse {
-    const versions = '>=0.13.0';
-    const success = semver.satisfies(semver.coerce(version), versions);
+    const versions = SUPPORTED_VERSIONS;
+    const formated = semver.coerce(version);
+    if (!formated)
+      return {
+        success: false,
+        reason: { message: 'Unknown version format', versions },
+      };
+
+    const success = semver.satisfies(formated, versions);
+    if (success) return { success: true };
+
     return {
-      success,
-      reason: !success
-        ? {
-            message: `The current version of the server does not satisfies the following versions requirement: ${versions}`,
-            versions,
-          }
-        : undefined,
+      success: false,
+      reason: {
+        message: `The current version of the server does not satisfies the following versions requirement: ${versions}`,
+        versions,
+      },
     };
+  }
+
+  /**
+   * Gives the status of the api
+   * this endpoint will always return true
+   *
+   * @returns Boolean, is the api healty or not
+   */
+  @TypedRoute.Get('/health')
+  getHealth(): boolean {
+    return true;
   }
 }

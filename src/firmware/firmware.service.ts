@@ -1,157 +1,352 @@
-import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
-import { ReleaseDTO } from 'src/github/dto/release.dto';
-import { GithubService } from 'src/github/github.service';
-import { APP_CONFIG, ConfigService } from 'src/config/config.service';
-import { AVAILABLE_FIRMWARE_REPOS } from './firmware.constants';
+import {
+  forwardRef,
+  Inject,
+  Injectable,
+  OnApplicationBootstrap,
+} from '@nestjs/common';
+import {
+  BuildFirmwareBody,
+  BuildStatus,
+  DefaultsFile,
+  FirmwareSourceDetail,
+  FirmwareSourcesDeclarations,
+  FirmwareWithFiles,
+  GithubBranch,
+  GithubRelease,
+} from './firmware.types';
+import { readFile, writeFile } from 'fs/promises';
+import { GITHUB_AUTH_KEY, S3_BUCKET, SOURCES_JSON_PATH } from 'src/env';
+import semver from 'semver';
+import { validatePrune } from 'typia/lib/misc';
+import * as schema from '../db.schema';
+import { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import objectHash from 'object-hash';
+import { debounceTime, filter, map, Subject } from 'rxjs';
+import { eq, ne, notInArray, or } from 'drizzle-orm';
+import path from 'path';
+import { InjectAws } from 'aws-sdk-v3-nest';
 import {
   DeleteObjectsCommand,
   ListObjectsV2Command,
+  PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
-import { InjectAws } from 'aws-sdk-v3-nest';
-import { PrismaService } from 'src/commons/prisma/prisma.service';
-import { Firmware, Prisma } from '@prisma/client';
-import * as Sentry from '@sentry/nestjs';
+import { PlatformIOService } from './platformio.service';
 
 @Injectable()
 export class FirmwareService implements OnApplicationBootstrap {
+  private availableSources: FirmwareSourceDetail[];
+  private readonly buildStatusSubject = new Subject<BuildStatus>();
+
   constructor(
-    @Inject(APP_CONFIG) private appConfig: ConfigService,
+    @Inject('DB') private db: NodePgDatabase<typeof schema>,
     @InjectAws(S3Client) private readonly s3: S3Client,
-    private githubService: GithubService,
-    private prisma: PrismaService,
+    @Inject(forwardRef(() => PlatformIOService))
+    private platformioService: PlatformIOService,
   ) {}
 
-  public getFirmwares(): Promise<Firmware[]> {
-    return this.prisma.firmware.findMany({ where: { buildStatus: 'DONE' } });
-  }
-
-  public getFirmware(id: string): Promise<
-    Prisma.FirmwareGetPayload<{
-      include: { boardConfig: true; imusConfig: true; firmwareFiles: true };
-    }>
-  > {
-    return this.prisma.firmware.findFirstOrThrow({
-      where: { id },
-      include: { boardConfig: true, imusConfig: true, firmwareFiles: true },
-    });
-  }
-
-  /**
-   *
-   * Fetch all the releases of all the firmware repositories
-   *
-   * @returns ReleaseDTO[] a list of all the releases
-   */
-  async getAllReleases(): Promise<ReleaseDTO[]> {
-    const releases: Promise<ReleaseDTO | ReleaseDTO[]>[] = [];
-
-    for (const [owner, repos] of Object.entries(AVAILABLE_FIRMWARE_REPOS)) {
-      for (const [repo, branches] of Object.entries(repos)) {
-        // Get all repo releases
-        releases.push(
-          this.githubService.getReleases(owner, repo).catch((e) => {
-            throw new Error(`Unable to fetch releases for "${owner}/${repo}"`, {
-              cause: e,
-            });
-          }),
-        );
-
-        // Get each branch as a release version
-        for (const branch of branches) {
-          releases.push(
-            this.githubService
-              .getBranchRelease(owner, repo, branch)
-              .catch((e) => {
-                throw new Error(
-                  `Unable to fetch branch release for "${owner}/${repo}/${branch}"`,
-                  { cause: e },
-                );
-              }),
-          );
-        }
-      }
-    }
-
-    const settled = await Promise.allSettled(releases);
-    return settled.flatMap((it) => {
-      if (it.status === 'fulfilled') {
-        return it.value;
-      }
-      Sentry.captureException(it); // Still send the error to sentry to it can be seen
-      console.warn(`${it.reason.message}: `, it.reason.cause);
-      return []; // Needed for filtering invalid promises
-    });
-  }
-
-  /**
-   * Called when the api starts
-   * this will check for all failled build and remove them
-   */
-  public async onApplicationBootstrap() {
-    // We set all firmware builds that was in building state to failed
-    // because the build did not complete and we have no way of resume the build
-    await this.prisma.firmware.updateMany({
-      where: { buildStatus: { not: 'DONE' } },
-      data: { buildStatus: 'ERROR' },
-    });
-    this.cleanAllOldReleases();
-    // Check every hour for failed builds and remove them
-    setInterval(() => {
-      this.cleanAllOldReleases();
-    }, 60 * 60 * 1000).unref();
-  }
-
-  /**
-   * Clean all old releases of all the firmware repos
-   */
-  public async cleanAllOldReleases() {
-    for (const [owner, repos] of Object.entries(AVAILABLE_FIRMWARE_REPOS)) {
-      for (const [repo, branches] of Object.entries(repos)) {
-        for (const branch of branches) {
-          this.cleanOldReleases(owner, repo, branch);
-        }
-      }
-    }
-  }
-
-  /**
-   * Clean all the old releases of a specific repo
-   */
-  public async cleanOldReleases(
-    owner = 'SlimeVR',
-    repo = 'SlimeVR-Tracker-ESP',
-    branch = 'main',
-  ): Promise<void> {
-    const branchRelease = await this.githubService
-      .getRelease(owner, repo, branch)
-      .catch((e) => console.log(e));
-
-    if (!branchRelease) return;
-
-    const oldFirmwares = await this.prisma.firmware.findMany({
-      where: {
-        releaseId: { not: branchRelease.id },
-        buildVersion: branchRelease.name,
+  async onApplicationBootstrap() {
+    await this.loadSources();
+    void this.cleanOldBuilds();
+    setInterval(
+      () => {
+        void (async () => {
+          await this.loadSources();
+          void this.cleanOldBuilds();
+        })();
       },
+      60 * 60 * 1000,
+    ).unref();
+  }
+
+  async cleanOldBuilds() {
+    const release_ids = this.getSources().map(({ release_id }) => release_id);
+    const oldFirmwares = await this.db.query.Firmwares.findMany({
+      where: or(
+        notInArray(schema.Firmwares.release_id, release_ids),
+        ne(schema.Firmwares.status, 'DONE'),
+      ),
     });
 
-    oldFirmwares.forEach(async (firmware) => {
-      await this.prisma.firmware.delete({
-        where: { id: firmware.id },
+    for (const firmware of oldFirmwares) {
+      await this.db
+        .delete(schema.Firmwares)
+        .where(eq(schema.Firmwares.id, firmware.id));
+      await this.emptyS3Directory(S3_BUCKET, firmware.id).catch(() => null);
+    }
+  }
+
+  async fileFromBranch(source: string, branch: string, file: string) {
+    const defaultsFile = await fetch(
+      `https://raw.githubusercontent.com/${source}/refs/heads/${branch}/${file}`,
+      { headers: { Authorization: `Bearer ${GITHUB_AUTH_KEY}` } },
+    )
+      .then((res) => {
+        if (res.ok) return res;
+        throw new Error('error');
+      })
+      .then((res) => res.json() as unknown)
+      .catch(() => null);
+    if (!defaultsFile) return null;
+    return defaultsFile;
+  }
+
+  async fileFromTag(source: string, tag: string, file: string) {
+    const defaultsFile = await fetch(
+      `https://raw.githubusercontent.com/${source}/refs/tags/${tag}/${file}`,
+      { headers: { Authorization: `Bearer ${GITHUB_AUTH_KEY}` } },
+    )
+      .then((res) => {
+        if (res.ok) return res;
+        throw new Error('error');
+      })
+      .then((res) => res.json() as unknown)
+      .catch(() => null);
+    if (!defaultsFile) return null;
+    return defaultsFile;
+  }
+
+  async getReleases(source: string) {
+    const releasesJson = await fetch(
+      `https://api.github.com/repos/${source}/releases`,
+      { headers: { Authorization: `Bearer ${GITHUB_AUTH_KEY}` } },
+    )
+      .then((res) => {
+        if (res.ok) return res;
+        throw new Error('error');
+      })
+      .then((res) => res.json() as unknown)
+      .catch((err: Error) => {
+        // TODO: Bind me to sentry
+        console.error('unable to load releases from ' + source, err.cause);
+        return null;
       });
-      await this.emptyS3Directory(
-        this.appConfig.getBuildsBucket(),
-        `${firmware.id}`,
+    if (!releasesJson) return null;
+    const releases = validatePrune<GithubRelease[]>(releasesJson);
+    if (!releases.success) {
+      // TODO: Bind me to sentry
+      console.error(
+        `Unable to parse release ${source} - skiping`,
+        releases.errors,
       );
-      console.log('deleted firmware id:', firmware.id);
+      return null;
+    }
+    return releases.data;
+  }
+
+  async getBranch(source: string, branch: string) {
+    const branchJson = await fetch(
+      `https://api.github.com/repos/${source}/branches/${branch}`,
+      { headers: { Authorization: `Bearer ${GITHUB_AUTH_KEY}` } },
+    )
+      .then(async (res) => {
+        if (res.ok) return res;
+        throw await res.json();
+      })
+      .then((res) => res.json() as unknown)
+      .catch((err: Error) => {
+        // TODO: Bind me to sentry
+        console.error(`unable to load branch from ${source} / ${branch}`, err);
+        return null;
+      });
+    if (!branchJson) return null;
+    const branchData = validatePrune<GithubBranch>(branchJson);
+    if (!branchData.success) {
+      // TODO: Bind me to sentry
+      console.error(
+        `Unable to parse release ${source} - skiping`,
+        branchData.errors,
+      );
+      return null;
+    }
+    return branchData.data;
+  }
+
+  async loadSources() {
+    const newSources = [];
+    const sourcesJson = JSON.parse(
+      await readFile(SOURCES_JSON_PATH, {
+        encoding: 'utf-8',
+      }),
+    ) as unknown;
+    const sources = validatePrune<FirmwareSourcesDeclarations>(sourcesJson);
+    if (!sources.success) throw new Error('unable to load sources json file ');
+
+    for (const [source, definition] of Object.entries(sources.data)) {
+      const releases = await this.getReleases(source);
+      if (!releases) continue;
+      for (const release of releases) {
+        if (!release.zipball_url) continue;
+        if (
+          definition.blockedVersions &&
+          definition.blockedVersions.find((v) =>
+            semver.satisfies(release.tag_name, v),
+          )
+        )
+          continue;
+        const [defaultsFile, schemaFile] = await Promise.all([
+          this.fileFromTag(source, release.tag_name, 'board-defaults.json'),
+          this.fileFromTag(
+            source,
+            release.tag_name,
+            'board-defaults.schema.json',
+          ),
+        ]);
+        if (!defaultsFile || !schemaFile) continue;
+        const defaults = validatePrune<DefaultsFile>(defaultsFile);
+        if (!defaults.success) {
+          // TODO: Bind me to sentry
+          console.error(
+            `Unable to parse defaults from ${source}`,
+            defaults.errors,
+          );
+          continue;
+        }
+        newSources.push({
+          toolchain: defaults.data.toolchain,
+          availableBoards: Object.keys(defaults.data.defaults),
+          defaults: defaults.data.defaults,
+          schema: schemaFile,
+          official: definition.official ?? false,
+          prerelease: release.prerelease,
+          source,
+          version: release.tag_name,
+          branch: 'main',
+          zipball_url: release.zipball_url,
+          release_id: release.id.toString(),
+        });
+      }
+
+      if (definition.extraBranches) {
+        for (const branch of definition.extraBranches) {
+          const [ghBranch, defaultsFile, schemaFile] = await Promise.all([
+            this.getBranch(source, branch),
+            this.fileFromBranch(source, branch, 'board-defaults.json'),
+            this.fileFromBranch(source, branch, 'board-defaults.schema.json'),
+          ]);
+          if (!defaultsFile || !schemaFile || !ghBranch) continue;
+          const defaults = validatePrune<DefaultsFile>(defaultsFile);
+          if (!defaults.success) {
+            // TODO: Bind me to sentry
+            console.error(
+              `Unable to parse defaults from ${source} / ${branch}`,
+              defaults.errors,
+            );
+            continue;
+          }
+          newSources.push({
+            toolchain: defaults.data.toolchain,
+            availableBoards: Object.keys(defaults.data.defaults),
+            defaults: defaults.data.defaults,
+            schema: schemaFile,
+            official: definition.official ?? false,
+            prerelease: false,
+            source,
+            version: branch,
+            branch,
+            zipball_url: `https://github.com/${source}/archive/refs/heads/${branch}.zip`,
+            release_id: ghBranch.commit.sha,
+          });
+        }
+      }
+    }
+
+    if (newSources.length === 0) {
+      console.log('WARN - No sources found');
+    }
+    this.availableSources = newSources;
+  }
+
+  async buildFirmware(body: BuildFirmwareBody): Promise<BuildStatus> {
+    const source = this.availableSources.find(
+      ({ source, version }) =>
+        source === body.source && body.version === version,
+    );
+    if (!source) throw new Error('cant find the source');
+
+    // Lets add the release id, to make sure the hash changes even when the artifacts from gh gets mutated
+    const id = objectHash({ ...body, release_id: source.release_id });
+
+    const foundFirmware = await this.db.query.Firmwares.findFirst({
+      where: eq(schema.Firmwares.id, id),
+      with: { files: true },
     });
+    if (foundFirmware) {
+      if (foundFirmware.status === 'DONE')
+        return {
+          id: foundFirmware.id,
+          status: foundFirmware.status,
+          files: foundFirmware.files,
+        };
+      else
+        return {
+          id: foundFirmware.id,
+          status: foundFirmware.status,
+        };
+    }
+
+    const res = await this.db
+      .insert(schema.Firmwares)
+      .values([{ status: 'QUEUED', id, release_id: source.release_id }])
+      .returning({ id: schema.Firmwares.id });
+
+    switch (source.toolchain) {
+      case 'platformio':
+        void this.platformioService.buildPlatformio({
+          ...body,
+          id: res[0].id,
+          sourceData: source,
+        });
+        break;
+      default:
+        throw new Error('unsuppored platform');
+    }
+    return {
+      id: res[0].id,
+      status: 'QUEUED',
+    };
+  }
+
+  downloadFile(url: string, path: string) {
+    return fetch(url)
+      .then((x) => x.arrayBuffer())
+      .then((x) => writeFile(path, Buffer.from(x)));
+  }
+
+  /**
+   * Upload a file to the related fw bucket
+   */
+  async uploadFile(
+    id: string,
+    name: string,
+    buffer: Buffer,
+    isFirmware = false,
+    offset = 0,
+  ) {
+    const upload = new PutObjectCommand({
+      Bucket: S3_BUCKET,
+      Key: path.join(id, name),
+      Body: buffer,
+    });
+    const file = await this.s3.send(upload);
+    const infos = await this.db
+      .insert(schema.FirmwareFiles)
+      .values([
+        {
+          firmwareId: id,
+          filePath: `${S3_BUCKET}/${id}/${name}`,
+          isFirmware,
+          offset,
+        },
+      ])
+      .returning();
+    return { s3: file, infos: infos[0] };
   }
 
   /**
    * Delete a folder and all its files inside a s3 bucket
    */
-  private async emptyS3Directory(bucket, dir) {
+  private async emptyS3Directory(bucket: string, dir: string) {
     const listObjectsV2 = new ListObjectsV2Command({
       Bucket: bucket,
       Prefix: dir,
@@ -169,5 +364,46 @@ export class FirmwareService implements OnApplicationBootstrap {
     await this.s3.send(new DeleteObjectsCommand(deleteParams));
 
     if (listedObjects.IsTruncated) await this.emptyS3Directory(bucket, dir);
+  }
+
+  async updateBuildStatus(status: BuildStatus) {
+    await this.db
+      .update(schema.Firmwares)
+      .set({ status: status.status })
+      .where(eq(schema.Firmwares.id, status.id));
+    this.buildStatusSubject.next(status);
+  }
+
+  getSources() {
+    return this.availableSources;
+  }
+
+  getBoard(s: string, v: string, board: string) {
+    const fwSource = this.availableSources.find(
+      ({ source, version }) => source === s && v === version,
+    );
+
+    if (!fwSource || !fwSource.defaults[board]) return null;
+    return { schema: fwSource.schema, defaults: fwSource.defaults[board] };
+  }
+
+  async getFirmware(id: string): Promise<FirmwareWithFiles | null> {
+    const firmware = await this.db.query.Firmwares.findFirst({
+      where: eq(schema.Firmwares.id, id),
+      with: { files: true },
+    });
+    if (!firmware) return null;
+    return firmware;
+  }
+
+  /**
+   * Subject with the build status, this gives the current status of a build from its id
+   */
+  public getBuildStatusSubject(id: string) {
+    return this.buildStatusSubject.asObservable().pipe(
+      filter((status) => status.id === id),
+      map((event) => ({ data: event })),
+      debounceTime(100),
+    );
   }
 }
