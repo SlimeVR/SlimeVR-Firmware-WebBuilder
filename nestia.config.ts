@@ -4,6 +4,9 @@ import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from 'src/app.module';
 
+const camelize = (word: string, index: number) =>
+  !word || index == 0 ? word : word[0].toUpperCase() + word.slice(1);
+
 const NESTIA_CONFIG: INestiaConfig = {
   input: async () => {
     const app = await NestFactory.create(AppModule);
@@ -16,15 +19,7 @@ const NESTIA_CONFIG: INestiaConfig = {
     return app;
   },
   swagger: {
-    openapi: '3.1',
     output: 'dist/swagger.json',
-    security: {
-      bearer: {
-        type: 'apiKey',
-        name: 'Authorization',
-        in: 'header',
-      },
-    },
     servers: [
       {
         url: 'http://localhost:3000',
@@ -32,6 +27,12 @@ const NESTIA_CONFIG: INestiaConfig = {
       },
     ],
     beautify: true,
+    openapi: '3.0',
+    operationId: ({ path, method }) =>
+      `${method.toLowerCase()}_${path.substring(1).replace(/\/|-|{|}/gi, '_')}`
+        .split('_')
+        .map(camelize)
+        .join(''),
   },
 };
 export default NESTIA_CONFIG;

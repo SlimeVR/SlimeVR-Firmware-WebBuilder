@@ -5,12 +5,15 @@ import { OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 import { PORT } from './env';
 
 import './instrument';
+import NESTIA_CONFIG from 'nestia.config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     cors: true,
   });
-  const document = await NestiaSwaggerComposer.document(app, {});
+  const document = await NestiaSwaggerComposer.document(app, {
+    ...NESTIA_CONFIG.swagger,
+  });
 
   const openApiDoc = document as OpenAPIObject;
 
