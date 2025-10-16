@@ -13,9 +13,10 @@ ENV PATH="${PATH}:/root/.platformio/penv/bin"
 COPY . /app
 WORKDIR /app
 
-# FROM base AS build
+FROM base AS build
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
-# CMD pnpm run start:dev
+RUN pnpm build
+RUN pnpm swagger
 
 FROM base
 COPY --from=build /app/node_modules /app/node_modules
