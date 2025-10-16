@@ -12,40 +12,40 @@ services:
       - database-volume:/var/lib/postgresql/data
     networks:
       - slimevr-network
-  # api:
-  #   build:
-  #     context: .
-  #   ports:
-  #     - 3000:3000
-  #   logging:
-  #     driver: "json-file"
-  #     options:
-  #       max-size: "50m"
-  #   depends_on:
-  #     - db
-  #     - minio
-  #   volumes:
-  #     - ./src:/app/src
-  #     - ./drizzle:/app/drizzle
-  #     - ./sources.json:/data/sources.json
-  #   networks:
-  #     - slimevr-network
-  #   secrets:
-  #     - access_key
-  #     - secret_key
-  #   environment:
-  #     SUPPORTED_VERSIONS: ${SUPPORTED_VERSIONS}
-  #     GITHUB_AUTH_KEY: ${GITHUB_AUTH_KEY}
-  #     SENTRY_URL: ${SENTRY_URL}
-  #     S3_BUCKET: ${S3_BUCKET}
-  #     DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
-  #     SOURCES_JSON_PATH: /data/sources.json
-  #   labels:
-  #     - traefik.enable=true
-  #     - traefik.http.routers.slimevr-api.rule=Host(`fw-tool-api.slimevr.io`)
-  #     - traefik.http.routers.slimevr-api.tls=true
-  #     - traefik.http.routers.slimevr-api.tls.certresolver=letsencrypt
-  #     - traefik.http.services.slimevr-api.loadbalancer.server.port=3000
+  api:
+    build:
+      context: .
+    ports:
+      - 3000:3000
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+    depends_on:
+      - db
+      - minio
+    volumes:
+      - ./src:/app/src
+      - ./drizzle:/app/drizzle
+      - ./sources.json:/data/sources.json
+    networks:
+      - slimevr-network
+    secrets:
+      - access_key
+      - secret_key
+    environment:
+      SUPPORTED_VERSIONS: ${SUPPORTED_VERSIONS}
+      GITHUB_AUTH_KEY: ${GITHUB_AUTH_KEY}
+      SENTRY_URL: ${SENTRY_URL}
+      S3_BUCKET: ${S3_BUCKET}
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
+      SOURCES_JSON_PATH: /data/sources.json
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.slimevr-api.rule=Host(`fw-tool-api.slimevr.io`)
+      - traefik.http.routers.slimevr-api.tls=true
+      - traefik.http.routers.slimevr-api.tls.certresolver=letsencrypt
+      - traefik.http.services.slimevr-api.loadbalancer.server.port=3000
   minio:
     image: minio/minio:latest
     volumes:

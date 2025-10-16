@@ -29,7 +29,7 @@ export type FirmwareSource = {
 
 export type FirmwareSourceDetail = FirmwareSource & {
   toolchain: Toolchain;
-  defaults: { [board: string]: BoardDefaults };
+  data: DefaultsFile;
   schema: unknown;
   zipball_url: string;
   release_id: string;
@@ -61,11 +61,11 @@ export type BoardDefaultsQuery = {
 
 export type FirmwareBoardDefaults = {
   schema: unknown;
-  defaults: BoardDefaults;
+  data: DefaultsFile;
 };
 
 export type BuildFirmwareBody = BoardDefaultsQuery & {
-  values: any;
+  values: BoardDefaults;
 };
 
 export type BuildFirmwareTask = BuildFirmwareBody & {

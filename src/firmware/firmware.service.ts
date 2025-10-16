@@ -8,6 +8,7 @@ import {
   BuildFirmwareBody,
   BuildStatus,
   DefaultsFile,
+  FirmwareBoardDefaults,
   FirmwareSourceDetail,
   FirmwareSourcesDeclarations,
   FirmwareWithFiles,
@@ -205,7 +206,7 @@ export class FirmwareService implements OnApplicationBootstrap {
         newSources.push({
           toolchain: defaults.data.toolchain,
           availableBoards: Object.keys(defaults.data.defaults),
-          defaults: defaults.data.defaults,
+          data: defaults.data,
           schema: schemaFile,
           official: definition.official ?? false,
           prerelease: release.prerelease,
@@ -237,7 +238,7 @@ export class FirmwareService implements OnApplicationBootstrap {
           newSources.push({
             toolchain: defaults.data.toolchain,
             availableBoards: Object.keys(defaults.data.defaults),
-            defaults: defaults.data.defaults,
+            data: defaults.data,
             schema: schemaFile,
             official: definition.official ?? false,
             prerelease: false,
@@ -378,13 +379,23 @@ export class FirmwareService implements OnApplicationBootstrap {
     return this.availableSources;
   }
 
-  getBoard(s: string, v: string, board: string) {
+  getBoard(s: string, v: string, board: string): FirmwareBoardDefaults | null {
     const fwSource = this.availableSources.find(
       ({ source, version }) => source === s && v === version,
     );
 
-    if (!fwSource || !fwSource.defaults[board]) return null;
-    return { schema: fwSource.schema, defaults: fwSource.defaults[board] };
+    if (!fwSource || !fwSource.data.defaults[board]) return null;
+
+    return {
+      schema: fwSource.schema,
+      data: {
+        ...fwSource.data,
+        defaults: Object.entries(fwSource.data.defaults).reduce(
+          (curr, [key, val]) => (key !== board ? curr : { [key]: val }),
+          {} as DefaultsFile['defaults'],
+        ),
+      },
+    };
   }
 
   async getFirmware(id: string): Promise<FirmwareWithFiles | null> {

@@ -75,7 +75,7 @@ export class PlatformIOService {
           env: {
             // Keep existing variables
             ...process.env,
-            SLIMEVR_OVERRIDE_DEFAULTS: `${JSON.stringify(build.values)}`,
+            SLIMEVR_OVERRIDE_DEFAULTS: `${JSON.stringify(build.values.values)}`,
             // Git commit hash or release tag
             GIT_REV: build.version,
           },
@@ -150,7 +150,7 @@ export class PlatformIOService {
    */
   private async getPartitions(
     board: string,
-    sourceData: FirmwareSourceDetail,
+    source: FirmwareSourceDetail,
     rootFoler: string,
   ): Promise<{ path: string; offset: number; isFirmware: boolean }[]> {
     const ideInfos = await new Promise<Partitions>((resolve) => {
@@ -171,7 +171,7 @@ export class PlatformIOService {
       })),
       {
         path: join(rootFoler, `.pio/build/${board}/firmware.bin`),
-        offset: sourceData.defaults[board].flashingRules.applicationOffset,
+        offset: source.data.defaults[board].flashingRules.applicationOffset,
         isFirmware: true,
       },
     ];
