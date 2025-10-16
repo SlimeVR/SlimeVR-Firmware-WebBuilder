@@ -35,7 +35,7 @@ lerna-debug.log*
 !.vscode/extensions.json
 
 
-docker/mysql/db
+docker/minio
 /.direnv
 
 .env
