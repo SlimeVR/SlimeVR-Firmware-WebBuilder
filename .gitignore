@@ -36,6 +36,7 @@ lerna-debug.log*
 
 
 docker/mysql/db
+docker/minio
 /.direnv
 
 .env
