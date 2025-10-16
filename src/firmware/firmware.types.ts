@@ -4,7 +4,6 @@ export type Toolchain = 'platformio';
 
 export type BoardDefaults = {
   values: any;
-  editable: string[];
   flashingRules: {
     applicationOffset: number;
     needBootPress: boolean;
