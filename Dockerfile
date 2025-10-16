@@ -15,10 +15,10 @@ WORKDIR /app
 
 # FROM base AS build
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
-CMD pnpm run start:dev
+# CMD pnpm run start:dev
 
-# FROM base
-# COPY --from=build /app/node_modules /app/node_modules
-# COPY --from=build /app/dist /app/dist
-# EXPOSE 3000
-# CMD node /app/dist/src/main.js
+FROM base
+COPY --from=build /app/node_modules /app/node_modules
+COPY --from=build /app/dist /app/dist
+EXPOSE 3000
+CMD node /app/dist/src/main.js

@@ -1,5 +1,5 @@
 {
-  "id": "7452c58f-aad3-4e65-8295-816366260b34",
+  "id": "2a8da8b0-ca81-4a4f-8949-d2e30f5e8172",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -8,27 +8,47 @@
       "name": "firmwareFiles",
       "schema": "",
       "columns": {
-        "id": {
-          "name": "id",
-          "type": "varchar(42)",
-          "primaryKey": true,
-          "notNull": true
-        },
         "filePath": {
           "name": "filePath",
           "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
+        },
+        "offset": {
+          "name": "offset",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
         },
         "isFirmware": {
           "name": "isFirmware",
           "type": "boolean",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
+        },
+        "firmwareId": {
+          "name": "firmwareId",
+          "type": "varchar(42)",
+          "primaryKey": false,
+          "notNull": true
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "firmwareFiles_firmwareId_firmwares_id_fk": {
+          "name": "firmwareFiles_firmwareId_firmwares_id_fk",
+          "tableFrom": "firmwareFiles",
+          "tableTo": "firmwares",
+          "columnsFrom": [
+            "firmwareId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -45,11 +65,11 @@
           "primaryKey": true,
           "notNull": true
         },
-        "commit": {
-          "name": "commit",
+        "release_id": {
+          "name": "release_id",
           "type": "varchar(64)",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "status": {
           "name": "status",
