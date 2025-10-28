@@ -9,14 +9,14 @@ services:
     expose:
       - 5432
     volumes:
-      - database-volume:/var/lib/postgresql/data
+      - database-volume:/var/lib/postgresql
     networks:
       - slimevr-network
   api:
     build:
       context: .
-    expose:
-      - 3000
+    ports:
+      - 3000:3000
     logging:
       driver: "json-file"
       options:
@@ -25,16 +25,16 @@ services:
       - db
       - minio
     volumes:
+      - ./src:/app/src
       - ./drizzle:/app/drizzle
       - ./sources.json:/data/sources.json
     networks:
       - slimevr-network
-      - traefik
     secrets:
       - access_key
       - secret_key
     environment:
-      APP_ENV: production
+      APP_ENV: development
       SUPPORTED_VERSIONS: ${SUPPORTED_VERSIONS}
       GITHUB_AUTH_KEY: ${GITHUB_AUTH_KEY}
       SENTRY_DSN: ${SENTRY_DSN}
@@ -42,12 +42,6 @@ services:
       S3_ENDPOINT: http://minio:9099
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
       SOURCES_JSON_PATH: /data/sources.json
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.slimevr-api-v2.rule=Host(`fw-tool-api-v2.slimevr.io`)
-      - traefik.http.routers.slimevr-api-v2.tls=true
-      - traefik.http.routers.slimevr-api-v2.tls.certresolver=letsencrypt
-      - traefik.http.services.slimevr-api-v2.loadbalancer.server.port=3000
   minio:
     image: minio/minio:latest
     volumes:
@@ -57,18 +51,11 @@ services:
       - secret_key
     command: server --address ":9099" --console-address ":9000" /data/disk{1...4}
     restart: always
-    expose:
-      - 9099
-      - 9000
+    ports:
+      - 9099:9099
+      - 9000:9000
     networks:
       - slimevr-network
-      - traefik
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.slimevr-api-v2-s3.rule=Host(`fw-tool-bucket-v2.slimevr.io`)
-      - traefik.http.routers.slimevr-api-v2-s3.tls=true
-      - traefik.http.routers.slimevr-api-v2-s3.tls.certresolver=letsencrypt
-      - traefik.http.services.slimevr-api-v2-s3.loadbalancer.server.port=9099
   minio-init:
     image: minio/mc:latest
     depends_on:
@@ -101,5 +88,3 @@ secrets:
 
 networks:
   slimevr-network:
-  traefik:
-    external: true

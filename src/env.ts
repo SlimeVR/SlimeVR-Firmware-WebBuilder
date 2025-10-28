@@ -13,18 +13,19 @@ export const S3_ENDPOINT = process.env.S3_ENDPOINT ?? '';
 export const SENTRY_DSN = process.env.SENTRY_DSN ?? '';
 
 export const getS3Config = async () => {
+  // This is kinda a hack but there is cases when the keys are not here but asked during build phase
+  // This should not be an issue tho bc it only so nestia can generate the openapi spec.
+  const getKey = async (key: string) =>
+    (await readFile(key).catch(() => '')).toString().trim() ?? '';
+
   return {
     region: 'us-east-1',
     endpoint: S3_ENDPOINT,
     credentials: {
       accessKeyId:
-        process.env.S3_ACCESS_KEY ??
-        (await readFile('/run/secrets/access_key')).toString().trim() ??
-        '',
+        process.env.S3_ACCESS_KEY ?? (await getKey('/run/secrets/access_key')),
       secretAccessKey:
-        process.env.S3_SECRET_KEY ??
-        (await readFile('/run/secrets/secret_key')).toString().trim() ??
-        '',
+        process.env.S3_SECRET_KEY ?? (await getKey('/run/secrets/secret_key')),
     },
     forcePathStyle: true,
   };
