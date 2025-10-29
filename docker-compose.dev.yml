@@ -20,7 +20,7 @@ services:
     build:
       context: .
     ports:
-      - 3000:3000
+      - 127.0.0.1:3000:3000
     logging:
       driver: "json-file"
       options:
