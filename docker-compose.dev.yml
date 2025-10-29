@@ -67,7 +67,8 @@ services:
   minio-init:
     image: minio/mc:latest
     depends_on:
-      - minio
+     minio:
+        condition: service_started
     networks:
       - slimevr-network
     secrets:
