@@ -60,7 +60,8 @@ services:
     restart: always
     ports:
       - 9099:9099
-      - 9000:9000
+      - 127.0.0.1:9099:9099
+#      - 127.0.0.1:9000:9000
     networks:
       - slimevr-network
   minio-init:
