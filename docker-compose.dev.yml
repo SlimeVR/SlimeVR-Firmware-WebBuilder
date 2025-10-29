@@ -27,7 +27,10 @@ services:
         max-size: "50m"
     depends_on:
       - db
-      - minio
+      db: 
+        condition: service_healthy
+      minio:
+        condition: service_started
     volumes:
       - ./src:/app/src
       - ./drizzle:/app/drizzle
