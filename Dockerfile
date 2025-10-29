@@ -22,4 +22,4 @@ FROM base
 COPY --from=build /app/node_modules /app/node_modules
 COPY --from=build /app/dist /app/dist
 EXPOSE 3000
-CMD npx drizzle-kit migrate && node /app/dist/src/main.js
+CMD node /app/dist/src/main.js
