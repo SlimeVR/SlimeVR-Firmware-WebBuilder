@@ -11,6 +11,7 @@ services:
     volumes:
       - database-volume:/var/lib/postgresql
     networks:
+      - slimevr-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
@@ -26,7 +27,6 @@ services:
       options:
         max-size: "50m"
     depends_on:
-      - db
       db: 
         condition: service_healthy
       minio:
@@ -59,7 +59,6 @@ services:
     command: server --address ":9099" --console-address ":9000" /data/disk{1...4}
     restart: always
     ports:
-      - 9099:9099
       - 127.0.0.1:9099:9099
 #      - 127.0.0.1:9000:9000
     networks:
