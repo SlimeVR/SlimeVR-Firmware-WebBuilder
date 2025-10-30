@@ -84,11 +84,10 @@ export class FirmwareService implements OnApplicationBootstrap {
       `https://raw.githubusercontent.com/${source}/refs/heads/${branch}/${file}`,
       { headers: { Authorization: `Bearer ${GITHUB_AUTH_KEY}` } },
     )
-      .then((res) => {
-        if (res.ok) return res;
-        throw new Error('error');
+      .then(async (res) => {
+        if (res.ok) return (await res.json()) as unknown;
+        throw new Error('error', { cause: await res.json() });
       })
-      .then((res) => res.json() as unknown)
       .catch(() => null);
     if (!defaultsFile) return null;
     return defaultsFile;
@@ -99,11 +98,10 @@ export class FirmwareService implements OnApplicationBootstrap {
       `https://raw.githubusercontent.com/${source}/refs/tags/${tag}/${file}`,
       { headers: { Authorization: `Bearer ${GITHUB_AUTH_KEY}` } },
     )
-      .then((res) => {
-        if (res.ok) return res;
-        throw new Error('error');
+      .then(async (res) => {
+        if (res.ok) return (await res.json()) as unknown;
+        throw new Error('error', { cause: await res.json() });
       })
-      .then((res) => res.json() as unknown)
       .catch(() => null);
     if (!defaultsFile) return null;
     return defaultsFile;
@@ -114,14 +112,13 @@ export class FirmwareService implements OnApplicationBootstrap {
       `https://api.github.com/repos/${source}/releases`,
       { headers: { Authorization: `Bearer ${GITHUB_AUTH_KEY}` } },
     )
-      .then((res) => {
-        if (res.ok) return res;
-        throw new Error('error');
+      .then(async (res) => {
+        if (res.ok) return (await res.json()) as unknown;
+        throw new Error('error', { cause: await res.json() });
       })
-      .then((res) => res.json() as unknown)
       .catch((err: Error) => {
         captureMessage('unable to load releases from ' + source, 'warning');
-        console.error('unable to load releases from ' + source, err.cause);
+        console.error('unable to load releases from ' + source, err);
         return null;
       });
     if (!releasesJson) return null;
@@ -143,10 +140,9 @@ export class FirmwareService implements OnApplicationBootstrap {
       { headers: { Authorization: `Bearer ${GITHUB_AUTH_KEY}` } },
     )
       .then(async (res) => {
-        if (res.ok) return res;
-        throw await res.json();
+        if (res.ok) return (await res.json()) as unknown;
+        throw new Error('error', { cause: await res.json() });
       })
-      .then((res) => res.json() as unknown)
       .catch((err: Error) => {
         captureMessage(
           `unable to load branch from ${source} / ${branch}`,
