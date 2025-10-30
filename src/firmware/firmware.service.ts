@@ -33,6 +33,8 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { PlatformIOService } from './platformio.service';
+import { captureException, captureMessage } from '@sentry/nestjs';
+import { Cron } from '@nestjs/schedule';
 
 @Injectable()
 export class FirmwareService implements OnApplicationBootstrap {
@@ -46,18 +48,18 @@ export class FirmwareService implements OnApplicationBootstrap {
     private platformioService: PlatformIOService,
   ) {}
 
-  async onApplicationBootstrap() {
+  async reloadSources() {
     await this.loadSources();
     void this.cleanOldBuilds();
-    setInterval(
-      () => {
-        void (async () => {
-          await this.loadSources();
-          void this.cleanOldBuilds();
-        })();
-      },
-      60 * 60 * 1000,
-    ).unref();
+  }
+
+  async onApplicationBootstrap() {
+    await this.reloadSources();
+  }
+
+  @Cron('*/5 * * * *')
+  async handleCron() {
+    await this.reloadSources();
   }
 
   async cleanOldBuilds() {
@@ -118,14 +120,14 @@ export class FirmwareService implements OnApplicationBootstrap {
       })
       .then((res) => res.json() as unknown)
       .catch((err: Error) => {
-        // TODO: Bind me to sentry
+        captureMessage('unable to load releases from ' + source, 'warning');
         console.error('unable to load releases from ' + source, err.cause);
         return null;
       });
     if (!releasesJson) return null;
     const releases = validatePrune<GithubRelease[]>(releasesJson);
     if (!releases.success) {
-      // TODO: Bind me to sentry
+      captureMessage(`Unable to parse release ${source} - skiping`, 'warning');
       console.error(
         `Unable to parse release ${source} - skiping`,
         releases.errors,
@@ -146,14 +148,17 @@ export class FirmwareService implements OnApplicationBootstrap {
       })
       .then((res) => res.json() as unknown)
       .catch((err: Error) => {
-        // TODO: Bind me to sentry
+        captureMessage(
+          `unable to load branch from ${source} / ${branch}`,
+          'warning',
+        );
         console.error(`unable to load branch from ${source} / ${branch}`, err);
         return null;
       });
     if (!branchJson) return null;
     const branchData = validatePrune<GithubBranch>(branchJson);
     if (!branchData.success) {
-      // TODO: Bind me to sentry
+      captureMessage(`Unable to parse release ${source} - skiping`, 'warning');
       console.error(
         `Unable to parse release ${source} - skiping`,
         branchData.errors,
@@ -164,73 +169,45 @@ export class FirmwareService implements OnApplicationBootstrap {
   }
 
   async loadSources() {
-    const newSources = [];
-    const sourcesJson = JSON.parse(
-      await readFile(SOURCES_JSON_PATH, {
-        encoding: 'utf-8',
-      }),
-    ) as unknown;
-    const sources = validatePrune<FirmwareSourcesDeclarations>(sourcesJson);
-    if (!sources.success) throw new Error('unable to load sources json file ');
+    try {
+      const newSources = [];
+      const sourcesJson = JSON.parse(
+        await readFile(SOURCES_JSON_PATH, {
+          encoding: 'utf-8',
+        }),
+      ) as unknown;
+      const sources = validatePrune<FirmwareSourcesDeclarations>(sourcesJson);
+      if (!sources.success) throw new Error('unable to load sources json file');
 
-    for (const [source, definition] of Object.entries(sources.data)) {
-      const releases = await this.getReleases(source);
-      if (!releases) continue;
-      for (const release of releases) {
-        if (!release.zipball_url) continue;
-        if (
-          definition.blockedVersions &&
-          definition.blockedVersions.find((v) =>
-            semver.satisfies(release.tag_name, v),
+      for (const [source, definition] of Object.entries(sources.data)) {
+        const releases = await this.getReleases(source);
+        if (!releases) continue;
+        for (const release of releases) {
+          if (!release.zipball_url) continue;
+          if (
+            definition.blockedVersions &&
+            definition.blockedVersions.find((v) =>
+              semver.satisfies(release.tag_name, v),
+            )
           )
-        )
-          continue;
-        const [defaultsFile, schemaFile] = await Promise.all([
-          this.fileFromTag(source, release.tag_name, 'board-defaults.json'),
-          this.fileFromTag(
-            source,
-            release.tag_name,
-            'board-defaults.schema.json',
-          ),
-        ]);
-        if (!defaultsFile || !schemaFile) continue;
-        const defaults = validatePrune<DefaultsFile>(defaultsFile);
-        if (!defaults.success) {
-          // TODO: Bind me to sentry
-          console.error(
-            `Unable to parse defaults from ${source}`,
-            defaults.errors,
-          );
-          continue;
-        }
-        newSources.push({
-          toolchain: defaults.data.toolchain,
-          availableBoards: Object.keys(defaults.data.defaults),
-          data: defaults.data,
-          schema: schemaFile,
-          official: definition.official ?? false,
-          prerelease: release.prerelease,
-          source,
-          version: release.tag_name,
-          branch: 'main',
-          zipball_url: release.zipball_url,
-          release_id: release.id.toString(),
-        });
-      }
-
-      if (definition.extraBranches) {
-        for (const branch of definition.extraBranches) {
-          const [ghBranch, defaultsFile, schemaFile] = await Promise.all([
-            this.getBranch(source, branch),
-            this.fileFromBranch(source, branch, 'board-defaults.json'),
-            this.fileFromBranch(source, branch, 'board-defaults.schema.json'),
+            continue;
+          const [defaultsFile, schemaFile] = await Promise.all([
+            this.fileFromTag(source, release.tag_name, 'board-defaults.json'),
+            this.fileFromTag(
+              source,
+              release.tag_name,
+              'board-defaults.schema.json',
+            ),
           ]);
-          if (!defaultsFile || !schemaFile || !ghBranch) continue;
+          if (!defaultsFile || !schemaFile) continue;
           const defaults = validatePrune<DefaultsFile>(defaultsFile);
           if (!defaults.success) {
-            // TODO: Bind me to sentry
+            captureMessage(
+              `Unable to parse defaults from ${source}`,
+              'warning',
+            );
             console.error(
-              `Unable to parse defaults from ${source} / ${branch}`,
+              `Unable to parse defaults from ${source}`,
               defaults.errors,
             );
             continue;
@@ -241,21 +218,60 @@ export class FirmwareService implements OnApplicationBootstrap {
             data: defaults.data,
             schema: schemaFile,
             official: definition.official ?? false,
-            prerelease: false,
+            prerelease: release.prerelease,
             source,
-            version: branch,
-            branch,
-            zipball_url: `https://github.com/${source}/archive/refs/heads/${branch}.zip`,
-            release_id: ghBranch.commit.sha,
+            version: release.tag_name,
+            branch: 'main',
+            zipball_url: release.zipball_url,
+            release_id: release.id.toString(),
           });
         }
-      }
-    }
 
-    if (newSources.length === 0) {
-      console.log('WARN - No sources found');
+        if (definition.extraBranches) {
+          for (const branch of definition.extraBranches) {
+            const [ghBranch, defaultsFile, schemaFile] = await Promise.all([
+              this.getBranch(source, branch),
+              this.fileFromBranch(source, branch, 'board-defaults.json'),
+              this.fileFromBranch(source, branch, 'board-defaults.schema.json'),
+            ]);
+            if (!defaultsFile || !schemaFile || !ghBranch) continue;
+            const defaults = validatePrune<DefaultsFile>(defaultsFile);
+            if (!defaults.success) {
+              captureMessage(
+                `Unable to parse defaults from ${source} / ${branch}`,
+                'warning',
+              );
+              console.error(
+                `Unable to parse defaults from ${source} / ${branch}`,
+                defaults.errors,
+              );
+              continue;
+            }
+            newSources.push({
+              toolchain: defaults.data.toolchain,
+              availableBoards: Object.keys(defaults.data.defaults),
+              data: defaults.data,
+              schema: schemaFile,
+              official: definition.official ?? false,
+              prerelease: false,
+              source,
+              version: branch,
+              branch,
+              zipball_url: `https://github.com/${source}/archive/refs/heads/${branch}.zip`,
+              release_id: ghBranch.commit.sha,
+            });
+          }
+        }
+      }
+
+      if (newSources.length === 0) {
+        captureMessage('WARN - No sources found', 'warning');
+        console.log('WARN - No sources found');
+      }
+      this.availableSources = newSources;
+    } catch (e) {
+      captureException(e);
     }
-    this.availableSources = newSources;
   }
 
   async buildFirmware(body: BuildFirmwareBody): Promise<BuildStatus> {

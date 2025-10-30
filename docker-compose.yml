@@ -12,6 +12,11 @@ services:
       - database-volume:/var/lib/postgresql/data
     networks:
       - slimevr-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   api:
     build:
       context: .
@@ -22,8 +27,10 @@ services:
       options:
         max-size: "50m"
     depends_on:
-      - db
-      - minio
+      db: 
+        condition: service_healthy
+      minio:
+        condition: service_started
     volumes:
       - ./drizzle:/app/drizzle
       - ./sources.json:/data/sources.json
@@ -72,7 +79,8 @@ services:
   minio-init:
     image: minio/mc:latest
     depends_on:
-      - minio
+     minio:
+        condition: service_started
     networks:
       - slimevr-network
     secrets:

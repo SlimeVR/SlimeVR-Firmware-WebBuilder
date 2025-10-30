@@ -14,6 +14,7 @@ import { InjectAws } from 'aws-sdk-v3-nest';
 import { S3Client } from '@aws-sdk/client-s3';
 import { FirmwareService } from './firmware.service';
 import { captureException, getCurrentScope } from '@sentry/nestjs';
+import { APP_ENV } from 'src/env';
 
 @Injectable()
 export class PlatformIOService {
@@ -83,12 +84,16 @@ export class PlatformIOService {
 
         platformioRun.stdout?.on('data', (data: Buffer) => {
           logs.push(data.toString());
-          console.log('[BUILD LOG]', `[${build.id}]`, data.toString());
+          if (APP_ENV === 'development') {
+            console.log('[BUILD LOG]', `[${build.id}]`, data.toString());
+          }
         });
 
         platformioRun.stderr?.on('data', (data: Buffer) => {
           logs.push(`[ERR] ${data.toString()}`);
-          console.log('[BUILD LOG]', `[${build.id}]`, data.toString());
+          if (APP_ENV === 'development') {
+            console.log('[BUILD LOG][ERR]', `[${build.id}]`, data.toString());
+          }
         });
 
         platformioRun.on('exit', (code) => {

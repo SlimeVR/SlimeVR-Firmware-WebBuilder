@@ -39,3 +39,4 @@ docker/minio
 /.direnv
 
 .env
+.vscode
