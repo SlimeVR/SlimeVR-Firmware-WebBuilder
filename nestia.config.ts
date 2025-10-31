@@ -20,12 +20,6 @@ const NESTIA_CONFIG: INestiaConfig = {
   },
   swagger: {
     output: 'dist/swagger.json',
-    servers: [
-      {
-        url: 'http://localhost:3000',
-        description: 'Local Server',
-      },
-    ],
     beautify: true,
     openapi: '3.0',
     operationId: ({ path, method }) =>
