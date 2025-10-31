@@ -1,6 +1,6 @@
 {
   "SlimeVR/SlimeVR-Tracker-ESP": {
-    "extraBranches": ["main", "optimized-params-v2", "llelievr/board-defaults"],
+    "extraBranches": ["main", "llelievr/board-defaults"],
     "blockedVersions": ["< 0.2.3", "0.5.0 - 0.5.2", "0.6.2"],
     "official": true
   },

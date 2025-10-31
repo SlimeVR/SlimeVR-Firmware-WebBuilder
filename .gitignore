@@ -35,7 +35,6 @@ lerna-debug.log*
 !.vscode/extensions.json
 
 
-docker/minio
 /.direnv
 
 .env
