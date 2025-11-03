@@ -70,12 +70,17 @@ export class PlatformIOService {
         status: 'BUILDING',
       });
 
+      const fwVersion = build.sourceData.official
+        ? build.sourceData.version
+        : undefined;
+
       await new Promise((resolve, reject) => {
         const platformioRun = exec(`platformio run -e ${build.board}`, {
           cwd: rootFoler,
           env: {
             // Keep existing variables
             ...process.env,
+            FIRMWARE_VERSION: fwVersion,
             SLIMEVR_OVERRIDE_DEFAULTS: `${JSON.stringify(build.values.values)}`,
             // Git commit hash or release tag
             GIT_REV: build.version,
