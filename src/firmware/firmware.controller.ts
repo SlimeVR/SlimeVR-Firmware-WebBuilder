@@ -27,7 +27,6 @@ export class FirmwareController {
    * List all the sources you can build a firmware from
    */
   @TypedRoute.Get('/sources')
-  @Header('Cache-Control', 'public, max-age=7200')
   sources(): FirmwareSource[] {
     return this.firmwareService.getSources();
   }
@@ -40,7 +39,6 @@ export class FirmwareController {
    *
    */
   @TypedRoute.Get('/board-defaults')
-  @Header('Cache-Control', 'public, max-age=7200')
   boardDefaults(
     @TypedQuery() query: BoardDefaultsQuery,
   ): FirmwareBoardDefaults | null {
