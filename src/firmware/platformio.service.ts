@@ -71,7 +71,9 @@ export class PlatformIOService {
       });
 
       const fwVersion = build.sourceData.official
-        ? build.sourceData.version
+        ? build.sourceData.version.startsWith('v')
+          ? build.sourceData.version.substring(1)
+          : build.sourceData.version
         : undefined;
 
       await new Promise((resolve, reject) => {
