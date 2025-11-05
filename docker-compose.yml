@@ -41,7 +41,7 @@ services:
       - access_key
       - secret_key
     environment:
-      APP_ENV: production
+      APP_ENV: development
       SUPPORTED_VERSIONS: ${SUPPORTED_VERSIONS}
       GITHUB_AUTH_KEY: ${GITHUB_AUTH_KEY}
       SENTRY_DSN: ${SENTRY_DSN}

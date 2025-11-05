@@ -1,5 +1,5 @@
 {
-  "id": "2a8da8b0-ca81-4a4f-8949-d2e30f5e8172",
+  "id": "352e6c24-ee5a-447a-a4fd-589528f56121",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -17,6 +17,12 @@
         "offset": {
           "name": "offset",
           "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "digest": {
+          "name": "digest",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },

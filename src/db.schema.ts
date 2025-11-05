@@ -42,6 +42,7 @@ export const Firmwares = pgTable(
 export const FirmwareFiles = pgTable('firmwareFiles', {
   filePath: varchar({ length: 255 }).notNull(),
   offset: numeric({ mode: 'number' }).notNull(),
+  digest: text().notNull(),
   isFirmware: boolean().notNull(),
   firmwareId: varchar({ length: 42 })
     .references(() => Firmwares.id, {

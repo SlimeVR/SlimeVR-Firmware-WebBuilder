@@ -35,6 +35,7 @@ import {
 import { PlatformIOService } from './platformio.service';
 import { captureException, captureMessage } from '@sentry/nestjs';
 import { Cron } from '@nestjs/schedule';
+import { createHash } from 'crypto';
 
 @Injectable()
 export class FirmwareService implements OnApplicationBootstrap {
@@ -336,6 +337,11 @@ export class FirmwareService implements OnApplicationBootstrap {
     isFirmware = false,
     offset = 0,
   ) {
+    // Calculate SHA-256 digest
+    const hash = createHash('sha256');
+    hash.update(buffer);
+    const digest = `sha256:${hash.digest('hex')}`;
+
     const upload = new PutObjectCommand({
       Bucket: S3_BUCKET,
       Key: path.join(id, name),
@@ -350,6 +356,7 @@ export class FirmwareService implements OnApplicationBootstrap {
           filePath: `${S3_BUCKET}/${id}/${name}`,
           isFirmware,
           offset,
+          digest,
         },
       ])
       .returning();

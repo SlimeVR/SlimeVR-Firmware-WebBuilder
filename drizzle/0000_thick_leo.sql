@@ -1,6 +1,7 @@
 CREATE TABLE "firmwareFiles" (
 	"filePath" varchar(255) NOT NULL,
 	"offset" numeric NOT NULL,
+	"digest" text NOT NULL,
 	"isFirmware" boolean NOT NULL,
 	"firmwareId" varchar(42) NOT NULL
 );
