@@ -1,7 +1,7 @@
 {
   "SlimeVR/SlimeVR-Tracker-ESP": {
     "extraBranches": ["main"],
-    "blockedVersions": ["< 0.2.3", "0.5.0 - 0.5.2", "0.6.2"],
+    "blockedVersions": ["< 0.2.3", "0.5.0 - 0.5.2", "0.6.2", "0.7.0"],
     "official": true
   },
   "gorbit99/SlimeVR-Tracker-ESP": {
