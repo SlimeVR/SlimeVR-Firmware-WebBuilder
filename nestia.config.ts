@@ -1,19 +1,26 @@
 import { INestiaConfig } from '@nestia/sdk';
-import { configService } from './src/config/config.service';
+import { NestFactory } from '@nestjs/core';
+// import { FastifyAdapter } from "@nestjs/platform-fastify";
+
+import { AppModule } from 'src/app.module';
 
 const camelize = (word: string, index: number) =>
   !word || index == 0 ? word : word[0].toUpperCase() + word.slice(1);
 
-const config: INestiaConfig = {
-  input: 'src/**/*.controller.ts',
+const NESTIA_CONFIG: INestiaConfig = {
+  input: async () => {
+    const app = await NestFactory.create(AppModule);
+    // const app = await NestFactory.create(YourModule, new FastifyAdapter());
+    // app.setGlobalPrefix("api");
+    // app.enableVersioning({
+    //     type: VersioningType.URI,
+    //     prefix: "v",
+    // })
+    return app;
+  },
   swagger: {
-    output: 'src/swagger.json',
-    servers: [
-      {
-        url: configService.getHostUrl(),
-        description: 'Main Server',
-      },
-    ],
+    output: 'dist/swagger.json',
+    beautify: true,
     openapi: '3.0',
     operationId: ({ path, method }) =>
       `${method.toLowerCase()}_${path.substring(1).replace(/\/|-|{|}/gi, '_')}`
@@ -22,4 +29,4 @@ const config: INestiaConfig = {
         .join(''),
   },
 };
-export default config;
+export default NESTIA_CONFIG;
