@@ -51,7 +51,7 @@ export class FirmwareService implements OnApplicationBootstrap {
 
   async reloadSources() {
     await this.loadSources();
-    void this.cleanOldBuilds();
+    void this.cleanOldBuilds(true);
   }
 
   async onApplicationBootstrap() {
@@ -63,12 +63,19 @@ export class FirmwareService implements OnApplicationBootstrap {
     await this.reloadSources();
   }
 
-  async cleanOldBuilds() {
+  @Cron('0 1 * * *')
+  async scheduleCleanup() {
+    await this.cleanOldBuilds();
+  }
+
+  async cleanOldBuilds(forced: boolean = false) {
     const release_ids = this.getSources().map(({ release_id }) => release_id);
     const oldFirmwares = await this.db.query.Firmwares.findMany({
       where: or(
         notInArray(schema.Firmwares.release_id, release_ids),
-        ne(schema.Firmwares.status, 'DONE'),
+        forced
+          ? ne(schema.Firmwares.status, 'DONE')
+          : eq(schema.Firmwares.status, 'ERROR'),
       ),
     });
 
