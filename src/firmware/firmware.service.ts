@@ -9,6 +9,7 @@ import {
   BuildStatus,
   DefaultsFile,
   FirmwareBoardDefaults,
+  FirmwareSourceDeclaration,
   FirmwareSourceDetail,
   FirmwareSourcesDeclarations,
   FirmwareWithFiles,
@@ -37,9 +38,11 @@ import { captureException, captureMessage } from '@sentry/nestjs';
 import { Cron } from '@nestjs/schedule';
 import { createHash } from 'crypto';
 
+const GITHUB_FETCH_TIMEOUT = 30_000;
+
 @Injectable()
 export class FirmwareService implements OnApplicationBootstrap {
-  private availableSources: FirmwareSourceDetail[];
+  private availableSources: FirmwareSourceDetail[] = [];
   private readonly buildStatusSubject = new Subject<BuildStatus>();
 
   constructor(
@@ -49,13 +52,17 @@ export class FirmwareService implements OnApplicationBootstrap {
     private platformioService: PlatformIOService,
   ) {}
 
-  async reloadSources() {
+  /**
+   * @param forced also remove the unfinished builds, only safe when nothing is building (on startup)
+   */
+  async reloadSources(forced = false) {
     await this.loadSources();
-    void this.cleanOldBuilds(true);
+    void this.cleanOldBuilds(forced);
   }
 
   async onApplicationBootstrap() {
-    await this.reloadSources();
+    // Builds that were running when the app stopped will never finish
+    await this.reloadSources(true);
   }
 
   @Cron('*/5 * * * *')
@@ -70,6 +77,8 @@ export class FirmwareService implements OnApplicationBootstrap {
 
   async cleanOldBuilds(forced: boolean = false) {
     const release_ids = this.getSources().map(({ release_id }) => release_id);
+    // Never cleanup without knowing the sources, this would wipe every build
+    if (release_ids.length === 0) return;
     const oldFirmwares = await this.db.query.Firmwares.findMany({
       where: or(
         notInArray(schema.Firmwares.release_id, release_ids),
@@ -87,94 +96,65 @@ export class FirmwareService implements OnApplicationBootstrap {
     }
   }
 
+  /**
+   * Fetch a json document from github
+   * Returns null only when the resource does not exist (404), throws on any other failure
+   * so a github outage is never mistaken for a removed release / file
+   */
+  private async fetchGithubJson(url: string): Promise<unknown> {
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${GITHUB_AUTH_KEY}` },
+      signal: AbortSignal.timeout(GITHUB_FETCH_TIMEOUT),
+    });
+    if (res.status === 404) return null;
+    if (!res.ok)
+      throw new Error(`github request failed (${res.status}) - ${url}`, {
+        cause: await res.text().catch(() => null),
+      });
+    return (await res.json()) as unknown;
+  }
+
   async fileFromBranch(source: string, branch: string, file: string) {
-    const defaultsFile = await fetch(
+    return this.fetchGithubJson(
       `https://raw.githubusercontent.com/${source}/refs/heads/${branch}/${file}`,
-      { headers: { Authorization: `Bearer ${GITHUB_AUTH_KEY}` } },
-    )
-      .then(async (res) => {
-        if (res.ok) return (await res.json()) as unknown;
-        throw new Error('error', { cause: await res.json() });
-      })
-      .catch(() => null);
-    if (!defaultsFile) return null;
-    return defaultsFile;
+    );
   }
 
   async fileFromTag(source: string, tag: string, file: string) {
-    const defaultsFile = await fetch(
+    return this.fetchGithubJson(
       `https://raw.githubusercontent.com/${source}/refs/tags/${tag}/${file}`,
-      { headers: { Authorization: `Bearer ${GITHUB_AUTH_KEY}` } },
-    )
-      .then(async (res) => {
-        if (res.ok) return (await res.json()) as unknown;
-        throw new Error('error', { cause: await res.json() });
-      })
-      .catch(() => null);
-    if (!defaultsFile) return null;
-    return defaultsFile;
+    );
   }
 
   async getReleases(source: string) {
-    const releasesJson = await fetch(
+    const releasesJson = await this.fetchGithubJson(
       `https://api.github.com/repos/${source}/releases`,
-      { headers: { Authorization: `Bearer ${GITHUB_AUTH_KEY}` } },
-    )
-      .then(async (res) => {
-        if (res.ok) return (await res.json()) as unknown;
-        throw new Error('error', { cause: await res.json() });
-      })
-      .catch((err: Error) => {
-        captureMessage('unable to load releases from ' + source, 'warning');
-        console.error('unable to load releases from ' + source, err);
-        return null;
-      });
+    );
     if (!releasesJson) return null;
     const releases = validatePrune<GithubRelease[]>(releasesJson);
-    if (!releases.success) {
-      captureMessage(`Unable to parse release ${source} - skiping`, 'warning');
-      console.error(
-        `Unable to parse release ${source} - skiping`,
-        releases.errors,
-      );
-      return null;
-    }
+    if (!releases.success)
+      throw new Error(`Unable to parse releases of ${source}`, {
+        cause: releases.errors,
+      });
     return releases.data;
   }
 
   async getBranch(source: string, branch: string) {
-    const branchJson = await fetch(
+    const branchJson = await this.fetchGithubJson(
       `https://api.github.com/repos/${source}/branches/${branch}`,
-      { headers: { Authorization: `Bearer ${GITHUB_AUTH_KEY}` } },
-    )
-      .then(async (res) => {
-        if (res.ok) return (await res.json()) as unknown;
-        throw new Error('error', { cause: await res.json() });
-      })
-      .catch((err: Error) => {
-        captureMessage(
-          `unable to load branch from ${source} / ${branch}`,
-          'warning',
-        );
-        console.error(`unable to load branch from ${source} / ${branch}`, err);
-        return null;
-      });
+    );
     if (!branchJson) return null;
     const branchData = validatePrune<GithubBranch>(branchJson);
-    if (!branchData.success) {
-      captureMessage(`Unable to parse release ${source} - skiping`, 'warning');
-      console.error(
-        `Unable to parse release ${source} - skiping`,
-        branchData.errors,
-      );
-      return null;
-    }
+    if (!branchData.success)
+      throw new Error(`Unable to parse branch ${source} / ${branch}`, {
+        cause: branchData.errors,
+      });
     return branchData.data;
   }
 
   async loadSources() {
     try {
-      const newSources = [];
+      const newSources: FirmwareSourceDetail[] = [];
       const sourcesJson = JSON.parse(
         await readFile(SOURCES_JSON_PATH, {
           encoding: 'utf-8',
@@ -184,98 +164,123 @@ export class FirmwareService implements OnApplicationBootstrap {
       if (!sources.success) throw new Error('unable to load sources json file');
 
       for (const [source, definition] of Object.entries(sources.data)) {
-        const releases = await this.getReleases(source);
-        if (!releases) continue;
-        for (const release of releases) {
-          if (!release.zipball_url) continue;
-          if (
-            definition.blockedVersions &&
-            definition.blockedVersions.find((v) =>
-              semver.satisfies(release.tag_name, v),
-            )
-          )
-            continue;
-          const [defaultsFile, schemaFile] = await Promise.all([
-            this.fileFromTag(source, release.tag_name, 'board-defaults.json'),
-            this.fileFromTag(
-              source,
-              release.tag_name,
-              'board-defaults.schema.json',
-            ),
-          ]);
-          if (!defaultsFile || !schemaFile) continue;
-          const defaults = validatePrune<DefaultsFile>(defaultsFile);
-          if (!defaults.success) {
-            captureMessage(
-              `Unable to parse defaults from ${source}`,
-              'warning',
-            );
-            console.error(
-              `Unable to parse defaults from ${source}`,
-              defaults.errors,
-            );
-            continue;
-          }
-          newSources.push({
-            toolchain: defaults.data.toolchain,
-            availableBoards: Object.keys(defaults.data.defaults),
-            data: defaults.data,
-            schema: schemaFile,
-            official: definition.official ?? false,
-            prerelease: release.prerelease,
-            source,
-            version: release.tag_name,
-            branch: 'main',
-            zipball_url: release.zipball_url,
-            release_id: release.id.toString(),
-          });
-        }
-
-        if (definition.extraBranches) {
-          for (const branch of definition.extraBranches) {
-            const [ghBranch, defaultsFile, schemaFile] = await Promise.all([
-              this.getBranch(source, branch),
-              this.fileFromBranch(source, branch, 'board-defaults.json'),
-              this.fileFromBranch(source, branch, 'board-defaults.schema.json'),
-            ]);
-            if (!defaultsFile || !schemaFile || !ghBranch) continue;
-            const defaults = validatePrune<DefaultsFile>(defaultsFile);
-            if (!defaults.success) {
-              captureMessage(
-                `Unable to parse defaults from ${source} / ${branch}`,
-                'warning',
-              );
-              console.error(
-                `Unable to parse defaults from ${source} / ${branch}`,
-                defaults.errors,
-              );
-              continue;
-            }
-            newSources.push({
-              toolchain: defaults.data.toolchain,
-              availableBoards: Object.keys(defaults.data.defaults),
-              data: defaults.data,
-              schema: schemaFile,
-              official: definition.official ?? false,
-              prerelease: false,
-              source,
-              version: branch,
-              branch,
-              zipball_url: `https://github.com/${source}/archive/refs/heads/${branch}.zip`,
-              release_id: ghBranch.commit.sha,
-            });
-          }
+        try {
+          newSources.push(...(await this.loadSource(source, definition)));
+        } catch (e) {
+          // Github is unreachable or misbehaving, keep what we already know about this source
+          // otherwise the cleanup would see its builds as outdated and delete them
+          const cached = this.availableSources.filter(
+            (s) => s.source === source,
+          );
+          captureMessage(
+            `unable to load ${source} from github - keeping ${cached.length} cached entries`,
+            'warning',
+          );
+          console.error(
+            `unable to load ${source} from github - keeping ${cached.length} cached entries`,
+            e,
+          );
+          newSources.push(...cached);
         }
       }
 
       if (newSources.length === 0) {
         captureMessage('WARN - No sources found', 'warning');
         console.log('WARN - No sources found');
+        return;
       }
       this.availableSources = newSources;
     } catch (e) {
       captureException(e);
     }
+  }
+
+  /**
+   * Load all the releases and extra branches of a source
+   * Throws if github could not be reached so the caller can fallback on the cache
+   */
+  private async loadSource(
+    source: string,
+    definition: FirmwareSourceDeclaration,
+  ): Promise<FirmwareSourceDetail[]> {
+    const newSources: FirmwareSourceDetail[] = [];
+    const releases = (await this.getReleases(source)) ?? [];
+    for (const release of releases) {
+      if (!release.zipball_url) continue;
+      if (
+        definition.blockedVersions &&
+        definition.blockedVersions.find((v) =>
+          semver.satisfies(release.tag_name, v),
+        )
+      )
+        continue;
+      const [defaultsFile, schemaFile] = await Promise.all([
+        this.fileFromTag(source, release.tag_name, 'board-defaults.json'),
+        this.fileFromTag(
+          source,
+          release.tag_name,
+          'board-defaults.schema.json',
+        ),
+      ]);
+      if (!defaultsFile || !schemaFile) continue;
+      const defaults = validatePrune<DefaultsFile>(defaultsFile);
+      if (!defaults.success) {
+        captureMessage(`Unable to parse defaults from ${source}`, 'warning');
+        console.error(
+          `Unable to parse defaults from ${source}`,
+          defaults.errors,
+        );
+        continue;
+      }
+      newSources.push({
+        toolchain: defaults.data.toolchain,
+        availableBoards: Object.keys(defaults.data.defaults),
+        data: defaults.data,
+        schema: schemaFile,
+        official: definition.official ?? false,
+        prerelease: release.prerelease,
+        source,
+        version: release.tag_name,
+        branch: 'main',
+        zipball_url: release.zipball_url,
+        release_id: release.id.toString(),
+      });
+    }
+
+    for (const branch of definition.extraBranches ?? []) {
+      const [ghBranch, defaultsFile, schemaFile] = await Promise.all([
+        this.getBranch(source, branch),
+        this.fileFromBranch(source, branch, 'board-defaults.json'),
+        this.fileFromBranch(source, branch, 'board-defaults.schema.json'),
+      ]);
+      if (!defaultsFile || !schemaFile || !ghBranch) continue;
+      const defaults = validatePrune<DefaultsFile>(defaultsFile);
+      if (!defaults.success) {
+        captureMessage(
+          `Unable to parse defaults from ${source} / ${branch}`,
+          'warning',
+        );
+        console.error(
+          `Unable to parse defaults from ${source} / ${branch}`,
+          defaults.errors,
+        );
+        continue;
+      }
+      newSources.push({
+        toolchain: defaults.data.toolchain,
+        availableBoards: Object.keys(defaults.data.defaults),
+        data: defaults.data,
+        schema: schemaFile,
+        official: definition.official ?? false,
+        prerelease: false,
+        source,
+        version: branch,
+        branch,
+        zipball_url: `https://github.com/${source}/archive/refs/heads/${branch}.zip`,
+        release_id: ghBranch.commit.sha,
+      });
+    }
+    return newSources;
   }
 
   async buildFirmware(body: BuildFirmwareBody): Promise<BuildStatus> {

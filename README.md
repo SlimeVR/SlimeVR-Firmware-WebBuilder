@@ -6,15 +6,15 @@ Slimevr firmware build api allows to build a tracker firmware with any configura
 1. Copy the ``.env.template`` file to ``.env``
 2. Edit the ``.env`` to your needs
 3. Edit the ``docker-compose.dev.yml`` to your network needs
-4. Generate access_key.txt and secret_key.txt for MinIO:
+4. Generate access_key.txt and secret_key.txt for the S3 storage (RustFS):
 ```bash
-$ mkdir -p ./docker/minio
+$ mkdir -p ./docker/s3
 
-# Set the username for MinIO:
-$ echo SLIMEVRACCESS > ./docker/minio/access_key.txt && chmod 600 ./docker/minio/access_key.txt
+# Set the username for RustFS:
+$ echo SLIMEVRACCESS > ./docker/s3/access_key.txt && chmod 600 ./docker/s3/access_key.txt
 
-# Generate a random password for MinIO:
-$ openssl rand -hex 16 > ./docker/minio/secret_key.txt && chmod 600 ./docker/minio/secret_key.txt
+# Generate a random password for RustFS:
+$ openssl rand -hex 16 > ./docker/s3/secret_key.txt && chmod 600 ./docker/s3/secret_key.txt
 ```
 5. Run the app and apply the migrations for the database
 

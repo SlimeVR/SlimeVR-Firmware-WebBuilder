@@ -1,6 +1,6 @@
 services:
   db:
-    image: "postgres"
+    image: "postgres:18"
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -9,7 +9,7 @@ services:
     expose:
       - 5432
     volumes:
-      - database-volume:/var/lib/postgresql/data
+      - db-volume:/var/lib/postgresql
     networks:
       - slimevr-network
     healthcheck:
@@ -27,10 +27,10 @@ services:
       options:
         max-size: "50m"
     depends_on:
-      db: 
+      db:
         condition: service_healthy
-      minio:
-        condition: service_started
+      s3-init:
+        condition: service_completed_successfully
     volumes:
       - ./drizzle:/app/drizzle
       - ./sources.json:/data/sources.json
@@ -46,7 +46,7 @@ services:
       GITHUB_AUTH_KEY: ${GITHUB_AUTH_KEY}
       SENTRY_DSN: ${SENTRY_DSN}
       S3_BUCKET: ${S3_BUCKET}
-      S3_ENDPOINT: http://minio:9099
+      S3_ENDPOINT: http://s3:9099
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
       SOURCES_JSON_PATH: /data/sources.json
     labels:
@@ -55,57 +55,64 @@ services:
       - traefik.http.routers.slimevr-api-v2.tls=true
       - traefik.http.routers.slimevr-api-v2.tls.certresolver=letsencrypt
       - traefik.http.services.slimevr-api-v2.loadbalancer.server.port=3000
-  minio:
-    image: minio/minio:latest
+  s3:
+    image: rustfs/rustfs:1.0.4
+    user: "0:0"
+    restart: always
     volumes:
-      - storage-minio:/data
+      - storage-s3:/data
     secrets:
       - access_key
       - secret_key
-    command: server --address ":9099" --console-address ":9000" /data/disk{1...4}
-    restart: always
+    environment:
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ADDRESS: 0.0.0.0:9099
+      RUSTFS_CONSOLE_ENABLE: "false"
+      RUSTFS_ACCESS_KEY_FILE: /run/secrets/access_key
+      RUSTFS_SECRET_KEY_FILE: /run/secrets/secret_key
     expose:
       - 9099
-      - 9000
     networks:
       - slimevr-network
       - traefik
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9099/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     labels:
       - traefik.enable=true
       - traefik.http.routers.slimevr-api-v2-s3.rule=Host(`fw-tool-bucket-v2.slimevr.io`)
       - traefik.http.routers.slimevr-api-v2-s3.tls=true
       - traefik.http.routers.slimevr-api-v2-s3.tls.certresolver=letsencrypt
       - traefik.http.services.slimevr-api-v2-s3.loadbalancer.server.port=9099
-  minio-init:
-    image: minio/mc:latest
+  s3-init:
+    image: amazon/aws-cli:2.38.6
     depends_on:
-     minio:
-        condition: service_started
+      s3:
+        condition: service_healthy
     networks:
       - slimevr-network
     secrets:
       - access_key
       - secret_key
-    entrypoint: >
-      /bin/sh -c "
-      sleep 3;
-      /usr/bin/mc alias set slimevr http://minio:9099 `cat /run/secrets/access_key` `cat /run/secrets/secret_key`;
-      /usr/bin/mc admin update slimevr;
-      /usr/bin/mc mb --ignore-existing slimevr/slimevr-firmware-builds;
-      /usr/bin/mc anonymous set download slimevr/slimevr-firmware-builds;
-      exit 0;
-      "
+    environment:
+      S3_BUCKET: ${S3_BUCKET}
+      S3_ENDPOINT: http://s3:9099
+    volumes:
+      - ./docker/s3/init.sh:/init.sh:ro
+    entrypoint: ["/bin/sh", "/init.sh"]
 
 volumes:
-  database-volume:
-  storage-minio:
+  db-volume:
+  storage-s3:
     external: false
 
 secrets:
   access_key:
-    file: ./docker/minio/access_key.txt
+    file: ./docker/s3/access_key.txt
   secret_key:
-    file: ./docker/minio/secret_key.txt
+    file: ./docker/s3/secret_key.txt
 
 networks:
   slimevr-network:
