@@ -13,6 +13,7 @@ import type {
   BuildStatus,
   FirmwareBoardDefaults,
   FirmwareSource,
+  FirmwareUpdate,
   FirmwareWithFiles,
 } from './firmware.types';
 import { FirmwareService } from './firmware.service';
@@ -47,6 +48,16 @@ export class FirmwareController {
       query.version,
       query.board,
     );
+  }
+
+  /**
+   * Latest firmware update per board
+   * with the mandatory minimum version and the staggered rollout
+   */
+  @TypedRoute.Get('/updates')
+  @Header('Cache-Control', 'public, max-age=300')
+  updates(): FirmwareUpdate[] {
+    return this.firmwareService.getUpdates();
   }
 
   @TypedRoute.Post('/build')

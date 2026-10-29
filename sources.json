@@ -2,7 +2,20 @@
   "SlimeVR/SlimeVR-Tracker-ESP": {
     "extraBranches": ["main"],
     "blockedVersions": ["< 0.2.3", "0.5.0 - 0.5.2", "0.6.2", "0.7.0"],
-    "official": true
+    "official": true,
+    "applicationAsset": "^BOARD_(?<board>.+)-firmware\\.bin$"
+  },
+  "SlimeVR/SlimeVR-Tracker-nRF": {
+    "official": true,
+    "scanOnly": true,
+    "allowPrerelease": true,
+    "applicationAsset": "^(?:SlimeNRF|SlimeVR)_(?<board>.+)_Tracker\\.uf2$"
+  },
+  "SlimeVR/SlimeVR-Tracker-nRF-Receiver": {
+    "official": true,
+    "scanOnly": true,
+    "allowPrerelease": true,
+    "applicationAsset": "^SlimeNRF_(?<board>.+)_Receiver\\.uf2$"
   },
   "gorbit99/SlimeVR-Tracker-ESP": {
     "extraBranches": ["on-off-button"]

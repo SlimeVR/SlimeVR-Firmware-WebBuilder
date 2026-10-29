@@ -12,9 +12,13 @@ import {
   FirmwareSourceDeclaration,
   FirmwareSourceDetail,
   FirmwareSourcesDeclarations,
+  FirmwareRollout,
+  FirmwareUpdate,
+  FirmwareUpdatePart,
   FirmwareWithFiles,
   GithubBranch,
   GithubRelease,
+  GithubReleaseAsset,
 } from './firmware.types';
 import { readFile, writeFile } from 'fs/promises';
 import { GITHUB_AUTH_KEY, S3_BUCKET, SOURCES_JSON_PATH } from 'src/env';
@@ -29,6 +33,7 @@ import path from 'path';
 import { InjectAws } from 'aws-sdk-v3-nest';
 import {
   DeleteObjectsCommand,
+  HeadObjectCommand,
   ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
@@ -39,10 +44,32 @@ import { Cron } from '@nestjs/schedule';
 import { createHash } from 'crypto';
 
 const GITHUB_FETCH_TIMEOUT = 30_000;
+const UPDATES_S3_PREFIX = 'updates';
+
+const releaseVersion = (release: GithubRelease) =>
+  semver.clean(release.tag_name);
+
+const isBlocked = (definition: FirmwareSourceDeclaration, tag: string) =>
+  !!definition.blockedVersions?.find((v) => semver.satisfies(tag, v));
+
+/**
+ * Assets matching the pattern, by the board captured in its `board` group
+ */
+const assetsByBoard = (assets: GithubReleaseAsset[], pattern: RegExp) => {
+  const boards = new Map<string, GithubReleaseAsset>();
+  for (const asset of assets) {
+    const board = pattern.exec(asset.name)?.groups?.board;
+    if (board && asset.browser_download_url) boards.set(board, asset);
+  }
+  return boards;
+};
 
 @Injectable()
 export class FirmwareService implements OnApplicationBootstrap {
   private availableSources: FirmwareSourceDetail[] = [];
+  private availableUpdates: FirmwareUpdate[] = [];
+  // S3 key to digest of the release assets already mirrored
+  private readonly mirroredAssets = new Map<string, string>();
   private readonly buildStatusSubject = new Subject<BuildStatus>();
 
   constructor(
@@ -73,6 +100,7 @@ export class FirmwareService implements OnApplicationBootstrap {
   @Cron('0 1 * * *')
   async scheduleCleanup() {
     await this.cleanOldBuilds();
+    await this.cleanOldUpdates();
   }
 
   async cleanOldBuilds(forced: boolean = false) {
@@ -94,6 +122,45 @@ export class FirmwareService implements OnApplicationBootstrap {
         .where(eq(schema.Firmwares.id, firmware.id));
       await this.emptyS3Directory(S3_BUCKET, firmware.id).catch(() => null);
     }
+  }
+
+  /**
+   * Remove the mirrored release assets no update points to anymore
+   */
+  async cleanOldUpdates() {
+    // Never cleanup without knowing the updates, this would wipe every mirrored asset
+    if (this.availableUpdates.length === 0) return;
+    const usedKeys = new Set(
+      this.availableUpdates.flatMap(({ latest }) =>
+        latest.parts.map(({ url }) => url.substring(S3_BUCKET.length + 1)),
+      ),
+    );
+
+    let continuationToken: string | undefined;
+    do {
+      const listed = await this.s3.send(
+        new ListObjectsV2Command({
+          Bucket: S3_BUCKET,
+          Prefix: `${UPDATES_S3_PREFIX}/`,
+          ContinuationToken: continuationToken,
+        }),
+      );
+      const oldKeys = (listed.Contents ?? [])
+        .map(({ Key }) => Key)
+        .filter((key): key is string => !!key && !usedKeys.has(key));
+      if (oldKeys.length > 0) {
+        await this.s3.send(
+          new DeleteObjectsCommand({
+            Bucket: S3_BUCKET,
+            Delete: { Objects: oldKeys.map((Key) => ({ Key })) },
+          }),
+        );
+        for (const key of oldKeys) this.mirroredAssets.delete(key);
+      }
+      continuationToken = listed.IsTruncated
+        ? listed.NextContinuationToken
+        : undefined;
+    } while (continuationToken);
   }
 
   /**
@@ -155,6 +222,7 @@ export class FirmwareService implements OnApplicationBootstrap {
   async loadSources() {
     try {
       const newSources: FirmwareSourceDetail[] = [];
+      const newUpdates: FirmwareUpdate[] = [];
       const sourcesJson = JSON.parse(
         await readFile(SOURCES_JSON_PATH, {
           encoding: 'utf-8',
@@ -165,12 +233,17 @@ export class FirmwareService implements OnApplicationBootstrap {
 
       for (const [source, definition] of Object.entries(sources.data)) {
         try {
-          newSources.push(...(await this.loadSource(source, definition)));
+          const loaded = await this.loadSource(source, definition);
+          newSources.push(...loaded.sources);
+          newUpdates.push(...loaded.updates);
         } catch (e) {
           // Github is unreachable or misbehaving, keep what we already know about this source
           // otherwise the cleanup would see its builds as outdated and delete them
           const cached = this.availableSources.filter(
             (s) => s.source === source,
+          );
+          newUpdates.push(
+            ...this.availableUpdates.filter((u) => u.source === source),
           );
           captureMessage(
             `unable to load ${source} from github - keeping ${cached.length} cached entries`,
@@ -184,6 +257,8 @@ export class FirmwareService implements OnApplicationBootstrap {
         }
       }
 
+      this.availableUpdates = newUpdates;
+
       if (newSources.length === 0) {
         captureMessage('WARN - No sources found', 'warning');
         console.log('WARN - No sources found');
@@ -196,24 +271,39 @@ export class FirmwareService implements OnApplicationBootstrap {
   }
 
   /**
-   * Load all the releases and extra branches of a source
+   * Load the buildable releases, extra branches and updates of a source
    * Throws if github could not be reached so the caller can fallback on the cache
    */
   private async loadSource(
     source: string,
     definition: FirmwareSourceDeclaration,
+  ): Promise<{ sources: FirmwareSourceDetail[]; updates: FirmwareUpdate[] }> {
+    const releases = (await this.getReleases(source)) ?? [];
+    const sources = definition.scanOnly
+      ? []
+      : await this.loadBuildSources(source, definition, releases);
+
+    let updates: FirmwareUpdate[];
+    try {
+      updates = await this.loadUpdates(source, definition, releases);
+    } catch (e) {
+      // A failed mirror must not drop the buildable sources, keep the last known updates
+      updates = this.availableUpdates.filter((u) => u.source === source);
+      captureException(e);
+      console.error(`unable to load updates of ${source}`, e);
+    }
+    return { sources, updates };
+  }
+
+  private async loadBuildSources(
+    source: string,
+    definition: FirmwareSourceDeclaration,
+    releases: GithubRelease[],
   ): Promise<FirmwareSourceDetail[]> {
     const newSources: FirmwareSourceDetail[] = [];
-    const releases = (await this.getReleases(source)) ?? [];
     for (const release of releases) {
       if (!release.zipball_url) continue;
-      if (
-        definition.blockedVersions &&
-        definition.blockedVersions.find((v) =>
-          semver.satisfies(release.tag_name, v),
-        )
-      )
-        continue;
+      if (isBlocked(definition, release.tag_name)) continue;
       const [defaultsFile, schemaFile] = await Promise.all([
         this.fileFromTag(source, release.tag_name, 'board-defaults.json'),
         this.fileFromTag(
@@ -281,6 +371,151 @@ export class FirmwareService implements OnApplicationBootstrap {
       });
     }
     return newSources;
+  }
+
+  /**
+   * Latest release per board that ships a deploy.json, with its assets mirrored to s3
+   */
+  private async loadUpdates(
+    source: string,
+    definition: FirmwareSourceDeclaration,
+    releases: GithubRelease[],
+  ): Promise<FirmwareUpdate[]> {
+    if (!definition.applicationAsset) return [];
+    const applicationAsset = new RegExp(definition.applicationAsset);
+    const bootloaderAsset = definition.bootloaderAsset
+      ? new RegExp(definition.bootloaderAsset)
+      : null;
+
+    let minVersion: string | null = null;
+    if (definition.minVersion) {
+      minVersion = semver.valid(definition.minVersion);
+      if (!minVersion)
+        captureMessage(
+          `Invalid minVersion ${definition.minVersion} for ${source}`,
+          'warning',
+        );
+    }
+
+    const candidates = releases
+      .filter(
+        (release) =>
+          !release.draft &&
+          (definition.allowPrerelease || !release.prerelease) &&
+          !!releaseVersion(release) &&
+          !isBlocked(definition, release.tag_name),
+      )
+      .sort((a, b) => semver.rcompare(releaseVersion(a)!, releaseVersion(b)!));
+
+    const updates: FirmwareUpdate[] = [];
+    const seenBoards = new Set<string>();
+    for (const release of candidates) {
+      const deployAsset = release.assets.find(
+        ({ name }) => name === 'deploy.json',
+      );
+      if (!deployAsset) continue;
+
+      const boards = [
+        ...assetsByBoard(release.assets, applicationAsset),
+      ].filter(([board]) => !seenBoards.has(board));
+      if (boards.length === 0) continue;
+
+      const rollout = await this.fetchRollout(deployAsset.browser_download_url);
+      if (!rollout) continue;
+
+      const bootloaders = bootloaderAsset
+        ? assetsByBoard(release.assets, bootloaderAsset)
+        : new Map<string, GithubReleaseAsset>();
+      for (const [board, asset] of boards) {
+        seenBoards.add(board);
+        const parts: FirmwareUpdatePart[] = [];
+        const bootloader = bootloaders.get(board);
+        if (bootloader)
+          parts.push({
+            ...(await this.mirrorAsset(source, release.tag_name, bootloader)),
+            offset: 0,
+            kind: 'BOOTLOADER',
+          });
+        parts.push({
+          ...(await this.mirrorAsset(source, release.tag_name, asset)),
+          offset: 0,
+          kind: 'APPLICATION',
+        });
+        updates.push({
+          source,
+          board,
+          latest: { version: releaseVersion(release)!, parts },
+          minVersion,
+          rollout,
+        });
+      }
+    }
+    return updates;
+  }
+
+  /**
+   * Read a release deploy.json, null when missing or invalid
+   */
+  private async fetchRollout(url: string): Promise<FirmwareRollout | null> {
+    const deployJson = await this.fetchGithubJson(url);
+    if (!deployJson) return null;
+    const rollout = validatePrune<FirmwareRollout>(deployJson);
+    if (!rollout.success) {
+      captureMessage(`Unable to parse deploy.json ${url}`, 'warning');
+      return null;
+    }
+    return rollout.data;
+  }
+
+  /**
+   * Copy a release asset to s3 once, the digest is kept in the object metadata
+   */
+  private async mirrorAsset(
+    source: string,
+    tag: string,
+    asset: GithubReleaseAsset,
+  ): Promise<{ url: string; digest: string }> {
+    const key = path.join(UPDATES_S3_PREFIX, source, tag, asset.name);
+    const url = `${S3_BUCKET}/${key}`;
+
+    const known = this.mirroredAssets.get(key);
+    if (known) return { url, digest: known };
+
+    const stored = await this.s3
+      .send(new HeadObjectCommand({ Bucket: S3_BUCKET, Key: key }))
+      .catch((e: { $metadata?: { httpStatusCode?: number } }) => {
+        if (e.$metadata?.httpStatusCode === 404) return null;
+        throw e;
+      });
+    const storedDigest = stored?.Metadata?.digest;
+    if (storedDigest) {
+      this.mirroredAssets.set(key, storedDigest);
+      return { url, digest: storedDigest };
+    }
+
+    const res = await fetch(asset.browser_download_url, {
+      headers: { Authorization: `Bearer ${GITHUB_AUTH_KEY}` },
+      signal: AbortSignal.timeout(GITHUB_FETCH_TIMEOUT),
+    });
+    if (!res.ok)
+      throw new Error(
+        `github asset download failed (${res.status}) - ${asset.browser_download_url}`,
+      );
+    const buffer = Buffer.from(await res.arrayBuffer());
+    const digest = `sha256:${createHash('sha256').update(buffer).digest('hex')}`;
+    if (asset.digest && asset.digest !== digest)
+      throw new Error(`digest mismatch for ${asset.browser_download_url}`);
+
+    await this.s3.send(
+      new PutObjectCommand({
+        Bucket: S3_BUCKET,
+        Key: key,
+        Body: buffer,
+        Metadata: { digest },
+      }),
+    );
+    this.mirroredAssets.set(key, digest);
+    return { url, digest };
   }
 
   async buildFirmware(body: BuildFirmwareBody): Promise<BuildStatus> {
@@ -408,6 +643,10 @@ export class FirmwareService implements OnApplicationBootstrap {
 
   getSources() {
     return this.availableSources;
+  }
+
+  getUpdates() {
+    return this.availableUpdates;
   }
 
   getBoard(s: string, v: string, board: string): FirmwareBoardDefaults | null {
